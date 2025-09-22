@@ -5,6 +5,8 @@ import android.app.*
 import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.media.RingtoneManager
+import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.*
 import android.text.Spannable
@@ -21,6 +23,7 @@ import com.pravera.flutter_foreground_task.utils.ForegroundServiceUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlin.intArrayOf
 
 /**
  * A service class for implementing foreground service.
@@ -148,6 +151,7 @@ class ForegroundService : Service() {
                 }
                 ForegroundServiceAction.API_UPDATE -> {
                     updateNotification()
+                    playSound()
                     val prevCallbackHandle = prevForegroundTaskData?.callbackHandle
                     val currCallbackHandle = foregroundTaskData.callbackHandle
                     if (prevCallbackHandle != currCallbackHandle) {
@@ -513,6 +517,51 @@ class ForegroundService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "getIconResId($icon)", e)
             return 0
+        }
+    }
+
+    private fun playSound() {
+        if (!notificationOptions.playSound) {
+            return
+        }
+
+        val sound = notificationContent.sound ?: return
+        val uri = getSoundUri(sound) ?: return
+
+        try {
+            val r = RingtoneManager.getRingtone(applicationContext, uri)
+            r.play()
+        } catch (e: Exception) {
+            Log.e(TAG, "playSound($uri)", e)
+        }
+    }
+
+    private fun getSoundUri(sound: String?): Uri? {
+        Log.i(TAG, "getSoundUri called with sound: $sound")
+        try {
+            val packageManager = applicationContext.packageManager
+            Log.i(TAG, "Obtained packageManager: $packageManager")
+            val packageName = applicationContext.packageName
+            Log.i(TAG, "Obtained packageName: $packageName")
+            val appInfo = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+            Log.i(TAG, "Obtained appInfo: $appInfo")
+
+            // custom icon
+            val metaData = appInfo.metaData
+            Log.i(TAG, "Obtained metaData: $metaData")
+            if (metaData != null) {
+            val resId = metaData.getInt(sound)
+            Log.i(TAG, "Obtained resId for sound '$sound': $resId")
+            val uri = Uri.parse("android.resource://$packageName/$resId")
+            Log.i(TAG, "Returning Uri: $uri")
+            return uri
+            }
+
+            Log.i(TAG, "metaData is null, returning null")
+            return null
+        } catch (e: Exception) {
+            Log.e(TAG, "getSoundUri($sound)", e)
+            return null
         }
     }
 

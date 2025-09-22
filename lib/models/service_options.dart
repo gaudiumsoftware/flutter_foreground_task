@@ -71,6 +71,7 @@ class ServiceUpdateOptions {
     this.notificationButtons,
     this.notificationInitialRoute,
     this.callback,
+    this.notificationSound,
   });
 
   final ForegroundTaskOptions? foregroundTaskOptions;
@@ -80,6 +81,7 @@ class ServiceUpdateOptions {
   final List<NotificationButton>? notificationButtons;
   final String? notificationInitialRoute;
   final Function? callback;
+  final String? notificationSound;
 
   Map<String, dynamic> toJson(Platform platform) {
     final Map<String, dynamic> json = {
@@ -88,6 +90,7 @@ class ServiceUpdateOptions {
       'icon': notificationIcon?.toJson(),
       'buttons': notificationButtons?.map((e) => e.toJson()).toList(),
       'initialRoute': notificationInitialRoute,
+      'notificationSound': notificationSound,
     };
 
     if (foregroundTaskOptions != null) {

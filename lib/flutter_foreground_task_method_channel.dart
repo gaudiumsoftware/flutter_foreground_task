@@ -77,6 +77,7 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
     List<NotificationButton>? notificationButtons,
     String? notificationInitialRoute,
     Function? callback,
+    String? notificationSound,
   }) async {
     final Map<String, dynamic> optionsJson = ServiceUpdateOptions(
       foregroundTaskOptions: foregroundTaskOptions,
@@ -85,6 +86,7 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
       notificationIcon: notificationIcon,
       notificationButtons: notificationButtons,
       notificationInitialRoute: notificationInitialRoute,
+      notificationSound: notificationSound,
       callback: callback,
     ).toJson(platform);
 
