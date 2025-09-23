@@ -170,7 +170,12 @@ class BackgroundService: NSObject {
       content.body = self.notificationContent.text
       content.categoryIdentifier = NOTIFICATION_CATEGORY_ID
       if self.notificationOptions.playSound {
-        content.sound = .default
+        if let soundName = self.notificationContent.notificationSound, !soundName.isEmpty {
+          let soundFileName = soundName.hasSuffix(".caf") ? soundName : "\(soundName).caf"
+          content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: soundFileName))
+        } else {
+          content.sound = .default
+        }
       }
       self.setNotificationActions()
       

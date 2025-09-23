@@ -11,6 +11,7 @@ struct NotificationContent {
   let title: String
   let text: String
   let buttons: Array<NotificationButton>
+  let notificationSound: String?
   
   static func getData() -> NotificationContent {
     let prefs = UserDefaults.standard
@@ -28,8 +29,10 @@ struct NotificationContent {
         }
       }
     }
+
+    let notificationSound = prefs.string(forKey: NOTIFICATION_CONTENT_SOUND)
     
-    return NotificationContent(title: title, text: text, buttons: buttons)
+    return NotificationContent(title: title, text: text, buttons: buttons, notificationSound: notificationSound)
   }
   
   static func setData(args: Dictionary<String, Any>) {
@@ -48,6 +51,9 @@ struct NotificationContent {
         }
       }
     }
+
+    let notificationSound = args[NOTIFICATION_CONTENT_SOUND] as? String ?? ""
+    prefs.set(notificationSound, forKey: NOTIFICATION_CONTENT_SOUND)
   }
   
   static func updateData(args: Dictionary<String, Any>) {
@@ -68,6 +74,10 @@ struct NotificationContent {
         }
       }
     }
+
+    if let notificationSound = args[NOTIFICATION_CONTENT_SOUND] as? String {
+      prefs.set(notificationSound, forKey: NOTIFICATION_CONTENT_SOUND)
+    }
   }
   
   static func clearData() {
@@ -75,5 +85,6 @@ struct NotificationContent {
     prefs.removeObject(forKey: NOTIFICATION_CONTENT_TITLE)
     prefs.removeObject(forKey: NOTIFICATION_CONTENT_TEXT)
     prefs.removeObject(forKey: NOTIFICATION_CONTENT_BUTTONS)
+    prefs.removeObject(forKey: NOTIFICATION_CONTENT_SOUND)
   }
 }
