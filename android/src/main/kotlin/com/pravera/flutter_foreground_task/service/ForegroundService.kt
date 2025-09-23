@@ -151,7 +151,7 @@ class ForegroundService : Service() {
                 }
                 ForegroundServiceAction.API_UPDATE -> {
                     updateNotification()
-                    playSound()
+                    playCustomSound()
                     val prevCallbackHandle = prevForegroundTaskData?.callbackHandle
                     val currCallbackHandle = foregroundTaskData.callbackHandle
                     if (prevCallbackHandle != currCallbackHandle) {
@@ -520,11 +520,7 @@ class ForegroundService : Service() {
         }
     }
 
-    private fun playSound() {
-        if (!notificationOptions.playSound) {
-            return
-        }
-
+    private fun playCustomSound() {
         val sound = notificationContent.sound ?: return
         val uri = getSoundUri(sound) ?: return
 
