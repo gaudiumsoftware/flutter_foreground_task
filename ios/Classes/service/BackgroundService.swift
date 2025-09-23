@@ -171,11 +171,13 @@ class BackgroundService: NSObject {
       content.categoryIdentifier = NOTIFICATION_CATEGORY_ID
       if self.notificationOptions.playSound {
         if let soundName = self.notificationContent.notificationSound, !soundName.isEmpty {
-          let soundFileName = soundName.hasSuffix(".caf") ? soundName : "\(soundName).caf"
-          content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: soundFileName))
-        } else {
-          content.sound = .default
-        }
+              let soundFileURL = Bundle.main.url(forResource: soundName, withExtension: "caf")
+              if let soundFileURL = soundFileURL {
+                content.sound = UNNotificationSound(named: UNNotificationSoundName(soundFileURL.lastPathComponent))
+              } else {
+                content.sound = .default
+              }
+        } 
       }
       self.setNotificationActions()
       
