@@ -76,7 +76,7 @@ data class NotificationContent(
 
             val initialRoute = map?.get(PrefsKey.NOTIFICATION_INITIAL_ROUTE) as? String
 
-            val sound = prefs.getString(PrefsKey.NOTIFICATION_SOUND, null)
+            val sound = map?.get(PrefsKey.NOTIFICATION_SOUND) as? String
 
             val vibratePattern = map?.get(PrefsKey.NOTIFICATION_VIBRATE_PATTERN) as? String
 
@@ -123,8 +123,8 @@ data class NotificationContent(
                 iconJsonString?.let { putString(PrefsKey.NOTIFICATION_CONTENT_ICON, it) }
                 buttonsJsonString?.let { putString(PrefsKey.NOTIFICATION_CONTENT_BUTTONS, it) }
                 initialRoute?.let { putString(PrefsKey.NOTIFICATION_INITIAL_ROUTE, it) }
-                sound?.let { putString(PrefsKey.NOTIFICATION_SOUND, it) }
-                vibratePattern?.let { putString(PrefsKey.NOTIFICATION_VIBRATE_PATTERN, it) }
+                putString(PrefsKey.NOTIFICATION_SOUND, sound)
+                putString(PrefsKey.NOTIFICATION_VIBRATE_PATTERN, vibratePattern)
                 commit()
             }
         }

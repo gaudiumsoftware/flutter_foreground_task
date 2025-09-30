@@ -522,6 +522,7 @@ class ForegroundService : Service() {
     }
 
     private fun playCustomSound() {
+        Log.i(TAG, "playCustomSound: sound = ${notificationContent.sound}")
         val sound = notificationContent.sound ?: return
         val uri = getSoundUri(sound) ?: return
         
