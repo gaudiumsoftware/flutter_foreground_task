@@ -83,10 +83,14 @@ struct NotificationContent {
 
     if let notificationSound = args[NOTIFICATION_CONTENT_SOUND] as? String {
       prefs.set(notificationSound, forKey: NOTIFICATION_CONTENT_SOUND)
+    } else {
+      prefs.removeObject(forKey: NOTIFICATION_CONTENT_SOUND)
     }
 
     if let vibratePattern = args[NOTIFICATION_CONTENT_VIBRATE_PATTERN] as? String {
       prefs.set(vibratePattern, forKey: NOTIFICATION_CONTENT_VIBRATE_PATTERN)
+    } else {
+      prefs.removeObject(forKey: NOTIFICATION_CONTENT_VIBRATE_PATTERN)
     }
   }
   
