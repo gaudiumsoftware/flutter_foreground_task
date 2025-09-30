@@ -80,6 +80,7 @@ class BackgroundService: NSObject {
         break
       case .API_UPDATE:
         requestNotification()
+        playVibration()
         let prevCallbackHandle = prevForegroundTaskData?.callbackHandle
         let currCallbackHandle = currForegroundTaskData.callbackHandle
         if prevCallbackHandle != currCallbackHandle {
@@ -185,6 +186,15 @@ class BackgroundService: NSObject {
       self.notificationCenter.add(request, withCompletionHandler: nil)
     }
   }
+
+  private func playVibration() {
+    if !notificationOptions.showNotification {
+      return
+    }
+
+    VibrationManager.shared.play(pattern: notificationContent.vibratePattern)    
+  }
+
   
   private func removeAllNotification() {
     notificationCenter.removePendingNotificationRequests(withIdentifiers: [NOTIFICATION_ID])

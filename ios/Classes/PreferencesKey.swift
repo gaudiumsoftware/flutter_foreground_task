@@ -17,6 +17,7 @@ let NOTIFICATION_CONTENT_TITLE = "notificationContentTitle"
 let NOTIFICATION_CONTENT_TEXT = "notificationContentText"
 let NOTIFICATION_CONTENT_BUTTONS = "buttons"
 let NOTIFICATION_CONTENT_SOUND = "notificationSound"
+let NOTIFICATION_CONTENT_VIBRATE_PATTERN = "notificationVibratePattern"
 
 // task options
 let TASK_EVENT_ACTION = "taskEventAction" // new
