@@ -152,6 +152,7 @@ class ForegroundService : Service() {
                 ForegroundServiceAction.API_UPDATE -> {
                     updateNotification()
                     playCustomSound()
+                    playVibration()
                     val prevCallbackHandle = prevForegroundTaskData?.callbackHandle
                     val currCallbackHandle = foregroundTaskData.callbackHandle
                     if (prevCallbackHandle != currCallbackHandle) {
@@ -523,7 +524,7 @@ class ForegroundService : Service() {
     private fun playCustomSound() {
         val sound = notificationContent.sound ?: return
         val uri = getSoundUri(sound) ?: return
-
+        
         try {
             val r = RingtoneManager.getRingtone(applicationContext, uri)
             r.play()
@@ -532,28 +533,62 @@ class ForegroundService : Service() {
         }
     }
 
+    private fun playVibration() {
+        val vibratePattern = notificationContent.vibratePattern ?: return
+
+        Log.i(TAG, "playVibration: vibratePattern = $vibratePattern")
+
+        if (vibratePattern == "none") {
+            return
+        }
+
+        // Handle different vibration patterns based on the enum string
+        try {
+            val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                when (vibratePattern) {
+                    "emphasis" -> {
+                        // More emphatic vibration: 3 quick pulses
+                        val timings = longArrayOf(0, 300, 100, 300, 100, 300)
+                        val amplitudes = intArrayOf(
+                            VibrationEffect.DEFAULT_AMPLITUDE,
+                            VibrationEffect.DEFAULT_AMPLITUDE,
+                            0,
+                            VibrationEffect.DEFAULT_AMPLITUDE,
+                            0,
+                            VibrationEffect.DEFAULT_AMPLITUDE
+                        )
+                        vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
+                    }
+                    "common" -> {
+                        vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
+                    }
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(500)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "playVibration()", e)
+        }
+    }
+
     private fun getSoundUri(sound: String?): Uri? {
         Log.i(TAG, "getSoundUri called with sound: $sound")
         try {
             val packageManager = applicationContext.packageManager
-            Log.i(TAG, "Obtained packageManager: $packageManager")
             val packageName = applicationContext.packageName
-            Log.i(TAG, "Obtained packageName: $packageName")
             val appInfo = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
-            Log.i(TAG, "Obtained appInfo: $appInfo")
 
             // custom icon
             val metaData = appInfo.metaData
-            Log.i(TAG, "Obtained metaData: $metaData")
             if (metaData != null) {
-            val resId = metaData.getInt(sound)
-            Log.i(TAG, "Obtained resId for sound '$sound': $resId")
-            val uri = Uri.parse("android.resource://$packageName/$resId")
-            Log.i(TAG, "Returning Uri: $uri")
-            return uri
+                val resId = metaData.getInt(sound)
+                val uri = Uri.parse("android.resource://$packageName/$resId")
+                return uri
             }
 
-            Log.i(TAG, "metaData is null, returning null")
             return null
         } catch (e: Exception) {
             Log.e(TAG, "getSoundUri($sound)", e)

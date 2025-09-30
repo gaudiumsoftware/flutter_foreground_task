@@ -16,6 +16,7 @@ import 'models/notification_button.dart';
 import 'models/notification_icon.dart';
 import 'models/notification_options.dart';
 import 'models/notification_permission.dart';
+import 'models/notification_vibrate_pattern.dart';
 import 'models/service_request_result.dart';
 import 'task_handler.dart';
 import 'utils/utility.dart';
@@ -33,6 +34,7 @@ export 'models/notification_icon.dart';
 export 'models/notification_options.dart';
 export 'models/notification_permission.dart';
 export 'models/notification_priority.dart';
+export 'models/notification_vibrate_pattern.dart';
 export 'models/notification_visibility.dart';
 export 'models/service_request_result.dart';
 export 'task_handler.dart';
@@ -164,6 +166,7 @@ class FlutterForegroundTask {
     String? notificationInitialRoute,
     Function? callback,
     String? notificationSound,
+    NotificationVibratePattern? notificationVibratePattern,
   }) async {
     try {
       if (!(await isRunningService)) {
@@ -179,6 +182,7 @@ class FlutterForegroundTask {
         notificationInitialRoute: notificationInitialRoute,
         callback: callback,
         notificationSound: notificationSound,
+        notificationVibratePattern: notificationVibratePattern,
       );
 
       return const ServiceRequestSuccess();
