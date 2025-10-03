@@ -11,6 +11,8 @@ struct NotificationContent {
   let title: String
   let text: String
   let buttons: Array<NotificationButton>
+  let notificationSound: String?
+  let vibratePattern: String?
   
   static func getData() -> NotificationContent {
     let prefs = UserDefaults.standard
@@ -28,8 +30,12 @@ struct NotificationContent {
         }
       }
     }
-    
-    return NotificationContent(title: title, text: text, buttons: buttons)
+
+    let notificationSound = prefs.string(forKey: NOTIFICATION_CONTENT_SOUND)
+
+    let vibratePattern = prefs.string(forKey: NOTIFICATION_CONTENT_VIBRATE_PATTERN)
+
+    return NotificationContent(title: title, text: text, buttons: buttons, notificationSound: notificationSound, vibratePattern: vibratePattern)
   }
   
   static func setData(args: Dictionary<String, Any>) {
@@ -48,6 +54,12 @@ struct NotificationContent {
         }
       }
     }
+
+    let notificationSound = args[NOTIFICATION_CONTENT_SOUND] as? String ?? ""
+
+    let vibratePattern = args[NOTIFICATION_CONTENT_VIBRATE_PATTERN] as? String ?? ""
+
+    prefs.set(notificationSound, forKey: NOTIFICATION_CONTENT_SOUND)
   }
   
   static func updateData(args: Dictionary<String, Any>) {
@@ -68,6 +80,18 @@ struct NotificationContent {
         }
       }
     }
+
+    if let notificationSound = args[NOTIFICATION_CONTENT_SOUND] as? String {
+      prefs.set(notificationSound, forKey: NOTIFICATION_CONTENT_SOUND)
+    } else {
+      prefs.removeObject(forKey: NOTIFICATION_CONTENT_SOUND)
+    }
+
+    if let vibratePattern = args[NOTIFICATION_CONTENT_VIBRATE_PATTERN] as? String {
+      prefs.set(vibratePattern, forKey: NOTIFICATION_CONTENT_VIBRATE_PATTERN)
+    } else {
+      prefs.removeObject(forKey: NOTIFICATION_CONTENT_VIBRATE_PATTERN)
+    }
   }
   
   static func clearData() {
@@ -75,5 +99,7 @@ struct NotificationContent {
     prefs.removeObject(forKey: NOTIFICATION_CONTENT_TITLE)
     prefs.removeObject(forKey: NOTIFICATION_CONTENT_TEXT)
     prefs.removeObject(forKey: NOTIFICATION_CONTENT_BUTTONS)
+    prefs.removeObject(forKey: NOTIFICATION_CONTENT_SOUND)
+    prefs.removeObject(forKey: NOTIFICATION_CONTENT_VIBRATE_PATTERN)
   }
 }

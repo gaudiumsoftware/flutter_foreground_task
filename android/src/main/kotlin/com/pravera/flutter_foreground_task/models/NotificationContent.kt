@@ -10,7 +10,9 @@ data class NotificationContent(
         val text: String,
         val icon: NotificationIcon?,
         val buttons: List<NotificationButton>,
-        val initialRoute: String?
+        val initialRoute: String?,
+        val sound: String?,
+        val vibratePattern: String?
 ) {
     companion object {
         fun getData(context: Context): NotificationContent {
@@ -38,12 +40,18 @@ data class NotificationContent(
 
             val initialRoute = prefs.getString(PrefsKey.NOTIFICATION_INITIAL_ROUTE, null)
 
+            val sound = prefs.getString(PrefsKey.NOTIFICATION_SOUND, null)
+
+            val vibratePattern = prefs.getString(PrefsKey.NOTIFICATION_VIBRATE_PATTERN, null)
+
             return NotificationContent(
                 title = title,
                 text = text,
                 icon = icon,
                 buttons = buttons,
-                initialRoute = initialRoute
+                initialRoute = initialRoute,
+                sound = sound,
+                vibratePattern = vibratePattern
             )
         }
 
@@ -68,12 +76,18 @@ data class NotificationContent(
 
             val initialRoute = map?.get(PrefsKey.NOTIFICATION_INITIAL_ROUTE) as? String
 
+            val sound = map?.get(PrefsKey.NOTIFICATION_SOUND) as? String
+
+            val vibratePattern = map?.get(PrefsKey.NOTIFICATION_VIBRATE_PATTERN) as? String
+
             with(prefs.edit()) {
                 putString(PrefsKey.NOTIFICATION_CONTENT_TITLE, title)
                 putString(PrefsKey.NOTIFICATION_CONTENT_TEXT, text)
                 putString(PrefsKey.NOTIFICATION_CONTENT_ICON, iconJsonString)
                 putString(PrefsKey.NOTIFICATION_CONTENT_BUTTONS, buttonsJsonString)
                 putString(PrefsKey.NOTIFICATION_INITIAL_ROUTE, initialRoute)
+                putString(PrefsKey.NOTIFICATION_SOUND, sound)
+                putString(PrefsKey.NOTIFICATION_VIBRATE_PATTERN, vibratePattern)
                 commit()
             }
         }
@@ -99,12 +113,18 @@ data class NotificationContent(
 
             val initialRoute = map?.get(PrefsKey.NOTIFICATION_INITIAL_ROUTE) as? String
 
+            val sound = map?.get(PrefsKey.NOTIFICATION_SOUND) as? String
+
+            val vibratePattern = map?.get(PrefsKey.NOTIFICATION_VIBRATE_PATTERN) as? String
+
             with(prefs.edit()) {
                 title?.let { putString(PrefsKey.NOTIFICATION_CONTENT_TITLE, it) }
                 text?.let { putString(PrefsKey.NOTIFICATION_CONTENT_TEXT, it) }
                 iconJsonString?.let { putString(PrefsKey.NOTIFICATION_CONTENT_ICON, it) }
                 buttonsJsonString?.let { putString(PrefsKey.NOTIFICATION_CONTENT_BUTTONS, it) }
                 initialRoute?.let { putString(PrefsKey.NOTIFICATION_INITIAL_ROUTE, it) }
+                putString(PrefsKey.NOTIFICATION_SOUND, sound)
+                putString(PrefsKey.NOTIFICATION_VIBRATE_PATTERN, vibratePattern)
                 commit()
             }
         }
