@@ -174,7 +174,7 @@ class ForegroundService : Service() {
             }
         } catch (e: Exception) {
             Log.e(TAG, e.message, e)
-            stopForegroundService(true)
+            stopForegroundService(false)
         }
 
         return if (isSetStopWithTaskFlag) {
