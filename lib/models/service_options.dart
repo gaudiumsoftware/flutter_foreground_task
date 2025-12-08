@@ -7,6 +7,7 @@ import 'foreground_task_options.dart';
 import 'notification_button.dart';
 import 'notification_icon.dart';
 import 'notification_options.dart';
+import 'notification_vibrate_pattern.dart';
 
 class ServiceStartOptions {
   const ServiceStartOptions({
@@ -71,6 +72,8 @@ class ServiceUpdateOptions {
     this.notificationButtons,
     this.notificationInitialRoute,
     this.callback,
+    this.notificationSound,
+    this.notificationVibratePattern,
   });
 
   final ForegroundTaskOptions? foregroundTaskOptions;
@@ -80,6 +83,8 @@ class ServiceUpdateOptions {
   final List<NotificationButton>? notificationButtons;
   final String? notificationInitialRoute;
   final Function? callback;
+  final String? notificationSound;
+  final NotificationVibratePattern? notificationVibratePattern;
 
   Map<String, dynamic> toJson(Platform platform) {
     final Map<String, dynamic> json = {
@@ -88,6 +93,8 @@ class ServiceUpdateOptions {
       'icon': notificationIcon?.toJson(),
       'buttons': notificationButtons?.map((e) => e.toJson()).toList(),
       'initialRoute': notificationInitialRoute,
+      'notificationSound': notificationSound,
+      'notificationVibratePattern': notificationVibratePattern?.name,
     };
 
     if (foregroundTaskOptions != null) {

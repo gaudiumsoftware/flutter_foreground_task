@@ -5,6 +5,8 @@ import android.app.*
 import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.media.RingtoneManager
+import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.*
 import android.text.Spannable
@@ -21,6 +23,7 @@ import com.pravera.flutter_foreground_task.utils.ForegroundServiceUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlin.intArrayOf
 
 /**
  * A service class for implementing foreground service.
@@ -148,6 +151,8 @@ class ForegroundService : Service() {
                 }
                 ForegroundServiceAction.API_UPDATE -> {
                     updateNotification()
+                    playCustomSound()
+                    playVibration()
                     val prevCallbackHandle = prevForegroundTaskData?.callbackHandle
                     val currCallbackHandle = foregroundTaskData.callbackHandle
                     if (prevCallbackHandle != currCallbackHandle) {
@@ -513,6 +518,82 @@ class ForegroundService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "getIconResId($icon)", e)
             return 0
+        }
+    }
+
+    private fun playCustomSound() {
+        Log.i(TAG, "playCustomSound: sound = ${notificationContent.sound}")
+        val sound = notificationContent.sound ?: return
+        val uri = getSoundUri(sound) ?: return
+        
+        try {
+            val r = RingtoneManager.getRingtone(applicationContext, uri)
+            r.play()
+        } catch (e: Exception) {
+            Log.e(TAG, "playSound($uri)", e)
+        }
+    }
+
+    private fun playVibration() {
+        val vibratePattern = notificationContent.vibratePattern ?: return
+
+        Log.i(TAG, "playVibration: vibratePattern = $vibratePattern")
+
+        if (vibratePattern == "none") {
+            return
+        }
+
+        // Handle different vibration patterns based on the enum string
+        try {
+            val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                when (vibratePattern) {
+                    "emphasis" -> {
+                        // More emphatic vibration: 3 quick pulses
+                        val timings = longArrayOf(0, 300, 100, 300, 100, 300)
+                        val amplitudes = intArrayOf(
+                            VibrationEffect.DEFAULT_AMPLITUDE,
+                            VibrationEffect.DEFAULT_AMPLITUDE,
+                            0,
+                            VibrationEffect.DEFAULT_AMPLITUDE,
+                            0,
+                            VibrationEffect.DEFAULT_AMPLITUDE
+                        )
+                        vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
+                    }
+                    "common" -> {
+                        vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
+                    }
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(500)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "playVibration()", e)
+        }
+    }
+
+    private fun getSoundUri(sound: String?): Uri? {
+        Log.i(TAG, "getSoundUri called with sound: $sound")
+        try {
+            val packageManager = applicationContext.packageManager
+            val packageName = applicationContext.packageName
+            val appInfo = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+
+            // custom icon
+            val metaData = appInfo.metaData
+            if (metaData != null) {
+                val resId = metaData.getInt(sound)
+                val uri = Uri.parse("android.resource://$packageName/$resId")
+                return uri
+            }
+
+            return null
+        } catch (e: Exception) {
+            Log.e(TAG, "getSoundUri($sound)", e)
+            return null
         }
     }
 

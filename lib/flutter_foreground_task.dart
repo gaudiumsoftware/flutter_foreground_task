@@ -5,17 +5,18 @@ import 'dart:ui';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'flutter_foreground_task_platform_interface.dart';
 import 'errors/service_already_started_exception.dart';
 import 'errors/service_not_initialized_exception.dart';
 import 'errors/service_not_started_exception.dart';
 import 'errors/service_timeout_exception.dart';
+import 'flutter_foreground_task_platform_interface.dart';
 import 'models/foreground_service_types.dart';
 import 'models/foreground_task_options.dart';
 import 'models/notification_button.dart';
 import 'models/notification_icon.dart';
 import 'models/notification_options.dart';
 import 'models/notification_permission.dart';
+import 'models/notification_vibrate_pattern.dart';
 import 'models/service_request_result.dart';
 import 'task_handler.dart';
 import 'utils/utility.dart';
@@ -33,10 +34,11 @@ export 'models/notification_icon.dart';
 export 'models/notification_options.dart';
 export 'models/notification_permission.dart';
 export 'models/notification_priority.dart';
+export 'models/notification_vibrate_pattern.dart';
 export 'models/notification_visibility.dart';
 export 'models/service_request_result.dart';
-export 'ui/with_foreground_task.dart';
 export 'task_handler.dart';
+export 'ui/with_foreground_task.dart';
 
 const String _kPortName = 'flutter_foreground_task/isolateComPort';
 const String _kPrefsKeyPrefix = 'com.pravera.flutter_foreground_task.prefs.';
@@ -163,6 +165,8 @@ class FlutterForegroundTask {
     List<NotificationButton>? notificationButtons,
     String? notificationInitialRoute,
     Function? callback,
+    String? notificationSound,
+    NotificationVibratePattern? notificationVibratePattern,
   }) async {
     try {
       if (!(await isRunningService)) {
@@ -177,6 +181,8 @@ class FlutterForegroundTask {
         notificationButtons: notificationButtons,
         notificationInitialRoute: notificationInitialRoute,
         callback: callback,
+        notificationSound: notificationSound,
+        notificationVibratePattern: notificationVibratePattern,
       );
 
       return const ServiceRequestSuccess();

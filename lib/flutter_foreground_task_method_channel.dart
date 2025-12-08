@@ -14,6 +14,7 @@ import 'models/notification_button.dart';
 import 'models/notification_icon.dart';
 import 'models/notification_options.dart';
 import 'models/notification_permission.dart';
+import 'models/notification_vibrate_pattern.dart';
 import 'models/service_options.dart';
 import 'task_handler.dart';
 
@@ -77,6 +78,8 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
     List<NotificationButton>? notificationButtons,
     String? notificationInitialRoute,
     Function? callback,
+    String? notificationSound,
+    NotificationVibratePattern? notificationVibratePattern,
   }) async {
     final Map<String, dynamic> optionsJson = ServiceUpdateOptions(
       foregroundTaskOptions: foregroundTaskOptions,
@@ -85,6 +88,8 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
       notificationIcon: notificationIcon,
       notificationButtons: notificationButtons,
       notificationInitialRoute: notificationInitialRoute,
+      notificationSound: notificationSound,
+      notificationVibratePattern: notificationVibratePattern,
       callback: callback,
     ).toJson(platform);
 

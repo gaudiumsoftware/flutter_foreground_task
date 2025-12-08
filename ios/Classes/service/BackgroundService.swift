@@ -80,6 +80,7 @@ class BackgroundService: NSObject {
         break
       case .API_UPDATE:
         requestNotification()
+        playVibration()
         let prevCallbackHandle = prevForegroundTaskData?.callbackHandle
         let currCallbackHandle = currForegroundTaskData.callbackHandle
         if prevCallbackHandle != currCallbackHandle {
@@ -128,7 +129,7 @@ class BackgroundService: NSObject {
     // If it is not a notification requested by this plugin, the processing below is ignored.
     if notification.request.identifier != NOTIFICATION_ID { return }
     
-    if notificationOptions.playSound {
+    if notificationOptions.playSound || notificationContent.notificationSound != nil {
       completionHandler([.alert, .sound])
     } else {
       completionHandler([.alert])
@@ -169,15 +170,33 @@ class BackgroundService: NSObject {
       content.title = self.notificationContent.title
       content.body = self.notificationContent.text
       content.categoryIdentifier = NOTIFICATION_CATEGORY_ID
-      if self.notificationOptions.playSound {
-        content.sound = .default
+      
+      if let soundName = self.notificationContent.notificationSound, !soundName.isEmpty {
+            let soundFileURL = Bundle.main.url(forResource: soundName, withExtension: "caf")
+            if let soundFileURL = soundFileURL {
+              content.sound = UNNotificationSound(named: UNNotificationSoundName(soundFileURL.lastPathComponent))
+            } else {
+              content.sound = .default
+            }
+      } else {
+          content.sound = nil
       }
+      
       self.setNotificationActions()
       
       let request = UNNotificationRequest(identifier: NOTIFICATION_ID, content: content, trigger: nil)
       self.notificationCenter.add(request, withCompletionHandler: nil)
     }
   }
+
+  private func playVibration() {
+    if !notificationOptions.showNotification {
+      return
+    }
+
+    VibrationManager.shared.play(pattern: notificationContent.vibratePattern)    
+  }
+
   
   private func removeAllNotification() {
     notificationCenter.removePendingNotificationRequests(withIdentifiers: [NOTIFICATION_ID])

@@ -7,6 +7,7 @@ import 'models/notification_button.dart';
 import 'models/notification_icon.dart';
 import 'models/notification_options.dart';
 import 'models/notification_permission.dart';
+import 'models/notification_vibrate_pattern.dart';
 import 'task_handler.dart';
 
 abstract class FlutterForegroundTaskPlatform extends PlatformInterface {
@@ -61,6 +62,8 @@ abstract class FlutterForegroundTaskPlatform extends PlatformInterface {
     List<NotificationButton>? notificationButtons,
     String? notificationInitialRoute,
     Function? callback,
+    String? notificationSound,
+    NotificationVibratePattern? notificationVibratePattern,
   }) {
     throw UnimplementedError('updateService() has not been implemented.');
   }
