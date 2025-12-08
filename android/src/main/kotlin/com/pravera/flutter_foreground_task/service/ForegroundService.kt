@@ -199,6 +199,12 @@ class ForegroundService : Service() {
         if (::foregroundServiceStatus.isInitialized) {
             isCorrectlyStopped = foregroundServiceStatus.isCorrectlyStopped()
         }
+
+        if (!::foregroundTaskOptions.isInitialized) {
+            Log.e(TAG, "foregroundTaskOptions was not properly started.")
+            return
+        }
+
         val allowAutoRestart = foregroundTaskOptions.allowAutoRestart
         if (allowAutoRestart && !isCorrectlyStopped && !ForegroundServiceUtils.isSetStopWithTaskFlag(this)) {
             Log.e(TAG, "The service will be restarted after 5 seconds because it wasn't properly stopped.")
