@@ -135,6 +135,10 @@ class ForegroundService : Service() {
         var action = foregroundServiceStatus.action
         val isSetStopWithTaskFlag = ForegroundServiceUtils.isSetStopWithTaskFlag(this)
 
+        if (action == ForegroundServiceAction.API_START) {
+            RestartBudget.reset(this)
+        }
+
         if (action == ForegroundServiceAction.API_STOP) {
             stopForegroundService(true)
             return START_NOT_STICKY
@@ -178,6 +182,8 @@ class ForegroundService : Service() {
             }
         } catch (e: Exception) {
             Log.e(TAG, e.message, e)
+
+            // startForeground() falhou, e tentar reanexar repete a mesma exceção.
             stopForegroundService(false)
         }
 
@@ -212,8 +218,13 @@ class ForegroundService : Service() {
 
         val allowAutoRestart = foregroundTaskOptions.allowAutoRestart
         if (allowAutoRestart && !isCorrectlyStopped && !ForegroundServiceUtils.isSetStopWithTaskFlag(this)) {
-            Log.e(TAG, "The service will be restarted after 5 seconds because it wasn't properly stopped.")
-            RestartReceiver.setRestartAlarm(this, 5000)
+            val delayMillis = RestartBudget.consume(this)
+            if (delayMillis == null) {
+                Log.e(TAG, "The service wasn't properly stopped, but the auto-restart budget is exhausted.")
+            } else {
+                Log.e(TAG, "The service will be restarted after ${delayMillis}ms because it wasn't properly stopped.")
+                RestartReceiver.setRestartAlarm(this, delayMillis)
+            }
         }
     }
 
@@ -222,7 +233,13 @@ class ForegroundService : Service() {
         if (ForegroundServiceUtils.isSetStopWithTaskFlag(this)) {
             stopSelf()
         } else {
-            RestartReceiver.setRestartAlarm(this, 1000)
+            // A primeira tentativa é 1s para manter responsivo quando o usuario só limpou a task.
+            val delayMillis = RestartBudget.consume(this, firstAttemptDelayMillis = 1000)
+            if (delayMillis == null) {
+                Log.e(TAG, "Task removed, but the auto-restart budget is exhausted.")
+            } else {
+                RestartReceiver.setRestartAlarm(this, delayMillis)
+            }
         }
     }
 
@@ -291,6 +308,9 @@ class ForegroundService : Service() {
         acquireLockMode()
 
         _isRunningServiceState.update { true }
+
+        // Serviço está em foreground e é seguro limpar o reinício.
+        RestartBudget.reset(this)
     }
 
     private fun attachForegroundTask() {
@@ -311,16 +331,23 @@ class ForegroundService : Service() {
 
     private fun stopForegroundService(shouldReattach: Boolean) {
         if (shouldReattach) {
-            attachForegroundTask()
+            try {
+                attachForegroundTask()
+            } catch (e: Exception) {
+                Log.e(TAG, "attachForegroundTask() failed before stop: ${e.message}", e)
+            }
         }
 
-        RestartReceiver.cancelRestartAlarm(this)
-        
-        releaseLockMode()
-        stopForeground(true)
-        stopSelf()
-
-        _isRunningServiceState.update { false }
+        try {
+            RestartReceiver.cancelRestartAlarm(this)
+            releaseLockMode()
+            stopForeground(true)
+        } catch (e: Exception) {
+            Log.e(TAG, "stopForegroundService() teardown failed: ${e.message}", e)
+        } finally {
+            stopSelf()
+            _isRunningServiceState.update { false }
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

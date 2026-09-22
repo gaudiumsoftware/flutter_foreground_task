@@ -58,4 +58,9 @@ object PreferencesKey {
 
     // task data
     const val CALLBACK_HANDLE = "callbackHandle"
+
+    // chaves relacionadas ao orçamento de alarm clock para iniciar o serviço novamente
+    const val RESTART_BUDGET_PREFS = prefix + "RESTART_BUDGET"
+    const val RESTART_ATTEMPT_COUNT = "restartAttemptCount"
+    const val RESTART_WINDOW_START = "restartWindowStart"
 }

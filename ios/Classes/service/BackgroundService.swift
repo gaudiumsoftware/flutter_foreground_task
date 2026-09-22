@@ -129,6 +129,7 @@ class BackgroundService: NSObject {
     // If it is not a notification requested by this plugin, the processing below is ignored.
     if notification.request.identifier != NOTIFICATION_ID { return }
     
+    // O som customizado deve tocar mesmo com playSound == false.
     if notificationOptions.playSound || notificationContent.notificationSound != nil {
       completionHandler([.alert, .sound])
     } else {
@@ -157,6 +158,7 @@ class BackgroundService: NSObject {
   }
   
   private func requestNotification() {
+    // Não publicar notificação com corpo vazio, evitando mostrar card em branco no iOS.
     if !notificationOptions.showNotification || notificationContent.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
       return
     }
@@ -179,6 +181,8 @@ class BackgroundService: NSObject {
               content.sound = .default
             }
       } else {
+          // Zerar o som para impedir que a notificação use o último som do cache mesmo quando
+          // foi solicitado não emitir som.
           content.sound = nil
       }
       
