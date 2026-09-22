@@ -97,7 +97,9 @@ class ForegroundService : Service() {
 
     private var isTimeout: Boolean = false
 
-    // Executor para tocar sons em thread separada
+    // [GAUDIUM/OEM] Executor para tocar sons em thread separada.
+    // NAO tocar o som na thread do onStartCommand: RingtoneManager.getRingtone() faz I/O
+    // e gerava ANR em ForegroundService.playCustomSound. Ver commit 842b2d6.
     private val soundExecutor = Executors.newSingleThreadExecutor()
 
     // A broadcast receiver that handles intents that occur in the foreground service.
@@ -135,6 +137,10 @@ class ForegroundService : Service() {
         var action = foregroundServiceStatus.action
         val isSetStopWithTaskFlag = ForegroundServiceUtils.isSetStopWithTaskFlag(this)
 
+        // [GAUDIUM/OEM] shouldReattach = true e OBRIGATORIO aqui.
+        // Motorola e outros OEMs exigem que startForeground() seja chamado tambem no caminho
+        // de parada; sem isso o processo crasha / lanca excecoes proprias do fabricante.
+        // Ver commits 8a1b743 e e11b051. Nao simplificar para stopForegroundService(false).
         if (action == ForegroundServiceAction.API_STOP) {
             stopForegroundService(true)
             return START_NOT_STICKY
@@ -178,6 +184,9 @@ class ForegroundService : Service() {
             }
         } catch (e: Exception) {
             Log.e(TAG, e.message, e)
+            // [GAUDIUM/OEM] shouldReattach = false de proposito: se chegamos aqui o
+            // startForeground() ja falhou, e tentar reanexar so repete a mesma excecao.
+            // Ver commit 9982fdb.
             stopForegroundService(false)
         }
 
@@ -205,6 +214,10 @@ class ForegroundService : Service() {
             isCorrectlyStopped = foregroundServiceStatus.isCorrectlyStopped()
         }
 
+        // [GAUDIUM] Guarda contra crash de lateinit quando o servico morre antes do
+        // primeiro loadDataFromPreferences() (ex.: excecao no onStartCommand inicial).
+        // Ver commit 0b74aa9. O upstream resolve o mesmo problema com um if envolvendo
+        // o bloco de auto-restart -- em um merge, manter esta versao.
         if (!::foregroundTaskOptions.isInitialized) {
             Log.e(TAG, "foregroundTaskOptions was not properly started.")
             return
@@ -293,6 +306,13 @@ class ForegroundService : Service() {
         _isRunningServiceState.update { true }
     }
 
+    // [GAUDIUM/OEM] Reanexa o servico ao foreground sem reiniciar a task.
+    // Existe por dois motivos de dispositivo:
+    //   1. Motorola (e outros OEMs) exigem startForeground() tambem nos caminhos de
+    //      update e stop, senao crasham com excecoes proprias do fabricante.
+    //   2. createNotificationChannel() precisa rodar ANTES do startForeground(), senao
+    //      alguns aparelhos derrubam o servico por canal inexistente (commit e11b051).
+    // Nao remover nem inlinar em um merge com o upstream.
     private fun attachForegroundTask() {
         RestartReceiver.cancelRestartAlarm(this)
 
@@ -309,6 +329,9 @@ class ForegroundService : Service() {
         }
     }
 
+    // [GAUDIUM/OEM] O parametro shouldReattach nao existe no upstream (la a assinatura e
+    // stopForegroundService() sem argumentos). Ao mergear, qualquer chamada nova vinda do
+    // upstream precisa virar stopForegroundService(true) para preservar o reattach de OEM.
     private fun stopForegroundService(shouldReattach: Boolean) {
         if (shouldReattach) {
             attachForegroundTask()
@@ -437,6 +460,8 @@ class ForegroundService : Service() {
         val serviceId = notificationOptions.serviceId
         val notification = createNotification()
 
+        // [GAUDIUM/OEM] startForeground() tambem no caminho de update, mesma razao do stop.
+        // Ver commit 8a1b743.
         attachForegroundTask()
 
         val nm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
