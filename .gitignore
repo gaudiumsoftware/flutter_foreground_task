@@ -8,3 +8,6 @@
 
 /pubspec.lock
 build/
+
+# Arquivos gerados pelo Flutter no example (versionados por engano)
+example/ios/Flutter/ephemeral/
