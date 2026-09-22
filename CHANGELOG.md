@@ -1,3 +1,18 @@
+## 9.2.2
+
+* [**FIX**] Resolved frequent ForegroundServiceDidNotStartInTime and ForegroundServiceDidNotStopInTime exceptions by avoiding redundant foreground service start contracts. [#377](https://github.com/Dev-hwang/flutter_foreground_task/pull/377)
+
+## 9.2.1
+
+* [**FIX**] Prevent crash in onDestroy [#372](https://github.com/Dev-hwang/flutter_foreground_task/pull/372)
+
+## 9.2.0
+
+* [**FEAT**] Add `allowAutoRestart` option, which enables the service to automatically restart if it is terminated by the system.
+* [**FEAT**] Add `stopWithTask` option, to ensure service termination when the app UI is dismissed.
+* [**FEAT**] Add `mediaProcessing` foreground service type.
+* [**FIX**] Fix `FLAG_STOP_WITH_TASK` bitmask check error.
+
 ## 9.1.0
 
 * [**FEAT**] Support manual foregroundServiceType via serviceTypes in startService

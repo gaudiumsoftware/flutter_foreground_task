@@ -19,7 +19,8 @@ import androidx.core.content.ContextCompat
 import com.pravera.flutter_foreground_task.FlutterForegroundTaskLifecycleListener
 import com.pravera.flutter_foreground_task.RequestCode
 import com.pravera.flutter_foreground_task.models.*
-import com.pravera.flutter_foreground_task.utils.ForegroundServiceUtils
+import com.pravera.flutter_foreground_task.utils.*
+import com.pravera.flutter_foreground_task.PreferencesKey as PrefsKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -133,6 +134,23 @@ class ForegroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         isTimeout = false
         loadDataFromPreferences()
+
+        // [GAUDIUM] Vindo do upstream 9.2.0 (stopWithTask). ATENCAO: quando stopWithTask
+        // esta setado, este bloco derruba o servico assim que TODAS as activities pausam,
+        // ou seja, quando o app vai para background -- o oposto do que um servico de
+        // polling precisa. So fica ativo se o lado Dart passar stopWithTask
+        // explicitamente; com o default (null) o bloco nunca instala nada.
+        // Se algum dia passarmos stopWithTask: true, revisar este comportamento antes.
+        val prefs = getSharedPreferences(PrefsKey.FOREGROUND_TASK_OPTIONS_PREFS, Context.MODE_PRIVATE)
+        if (prefs.contains(PrefsKey.STOP_WITH_TASK) && prefs.getBoolean(PrefsKey.STOP_WITH_TASK, false)) {
+            (application as? Application)?.let {
+                TrackVisibilityUtils.install(it) {
+                    // [GAUDIUM/OEM] upstream chama stopForegroundService() sem argumento;
+                    // aqui precisa ser true para preservar o reattach de OEM.
+                    stopForegroundService(true)
+                }
+            }
+        }
 
         var action = foregroundServiceStatus.action
         val isSetStopWithTaskFlag = ForegroundServiceUtils.isSetStopWithTaskFlag(this)
