@@ -358,16 +358,31 @@ class ForegroundService : Service() {
     // upstream precisa virar stopForegroundService(true) para preservar o reattach de OEM.
     private fun stopForegroundService(shouldReattach: Boolean) {
         if (shouldReattach) {
-            attachForegroundTask()
+            // [GAUDIUM] O reattach e best-effort. Se o startForeground() la dentro lancar,
+            // a parada NAO pode ser abortada: antes desta guarda a excecao escapava pelo
+            // caminho API_STOP do onStartCommand, que fica fora do try/catch, e o servico
+            // seguia vivo com _isRunningServiceState == true. Isso fazia o
+            // isRunningService() do Dart mentir e o start seguinte falhar com
+            // ServiceAlreadyStartedException.
+            try {
+                attachForegroundTask()
+            } catch (e: Exception) {
+                Log.e(TAG, "attachForegroundTask() failed before stop: ${e.message}", e)
+            }
         }
 
-        RestartReceiver.cancelRestartAlarm(this)
-        
-        releaseLockMode()
-        stopForeground(true)
-        stopSelf()
-
-        _isRunningServiceState.update { false }
+        try {
+            RestartReceiver.cancelRestartAlarm(this)
+            releaseLockMode()
+            stopForeground(true)
+        } catch (e: Exception) {
+            Log.e(TAG, "stopForegroundService() teardown failed: ${e.message}", e)
+        } finally {
+            // [GAUDIUM] Inegociavel: o servico precisa parar e o state flow precisa
+            // refletir isso, de o que der acima.
+            stopSelf()
+            _isRunningServiceState.update { false }
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

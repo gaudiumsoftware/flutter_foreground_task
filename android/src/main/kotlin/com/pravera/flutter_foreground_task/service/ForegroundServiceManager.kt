@@ -2,7 +2,6 @@ package com.pravera.flutter_foreground_task.service
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import androidx.core.content.ContextCompat
 import com.pravera.flutter_foreground_task.errors.ServiceAlreadyStartedException
 import com.pravera.flutter_foreground_task.errors.ServiceNotStartedException
@@ -51,7 +50,6 @@ class ForegroundServiceManager {
 
 	/** Update the foreground service. */
 	fun update(context: Context, arguments: Any?) {
-		Log.d("ForegroundServiceManag", "update called")
 		if (!isRunningService()) {
 			throw ServiceNotStartedException()
 		}
