@@ -37,10 +37,15 @@ class RestartReceiver : BroadcastReceiver() {
 				context, RequestCode.SET_RESTART_SERVICE_ALARM, intent, flags)
 
 			val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+			// [GAUDIUM] setExactAndAllowWhileIdle no lugar de setAlarmClock.
+			// Os dois concedem a janela temporaria de allowlist que permite iniciar um
+			// foreground service a partir do background no Android 12+, que e o motivo
+			// real de usar alarme exato aqui. Mas setAlarmClock e tratado pelo sistema
+			// como despertador do usuario: acorda o aparelho de forma agressiva e chega
+			// a exibir o icone de alarme na status bar, o que confundia usuarios.
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
 				PluginUtils.canScheduleExactAlarms(context)) {
-				val info = AlarmManager.AlarmClockInfo(triggerTime, operation)
-				alarmManager.setAlarmClock(info, operation)
+				alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, operation)
 			} else {
 				alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, operation)
 			}

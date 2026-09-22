@@ -58,4 +58,11 @@ object PreferencesKey {
 
     // task data
     const val CALLBACK_HANDLE = "callbackHandle"
+
+    // [GAUDIUM] orcamento de auto-restart
+    // Prefs proprio de proposito: o de task options e limpo no stop() e levaria o
+    // contador junto.
+    const val RESTART_BUDGET_PREFS = prefix + "RESTART_BUDGET"
+    const val RESTART_ATTEMPT_COUNT = "restartAttemptCount"
+    const val RESTART_WINDOW_START = "restartWindowStart"
 }

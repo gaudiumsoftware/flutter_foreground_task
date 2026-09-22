@@ -137,6 +137,11 @@ class ForegroundService : Service() {
         var action = foregroundServiceStatus.action
         val isSetStopWithTaskFlag = ForegroundServiceUtils.isSetStopWithTaskFlag(this)
 
+        // [GAUDIUM] Start explicito vindo do Dart sempre comeca com o orcamento cheio.
+        if (action == ForegroundServiceAction.API_START) {
+            RestartBudget.reset(this)
+        }
+
         // [GAUDIUM/OEM] shouldReattach = true e OBRIGATORIO aqui.
         // Motorola e outros OEMs exigem que startForeground() seja chamado tambem no caminho
         // de parada; sem isso o processo crasha / lanca excecoes proprias do fabricante.
@@ -225,8 +230,15 @@ class ForegroundService : Service() {
 
         val allowAutoRestart = foregroundTaskOptions.allowAutoRestart
         if (allowAutoRestart && !isCorrectlyStopped && !ForegroundServiceUtils.isSetStopWithTaskFlag(this)) {
-            Log.e(TAG, "The service will be restarted after 5 seconds because it wasn't properly stopped.")
-            RestartReceiver.setRestartAlarm(this, 5000)
+            // [GAUDIUM] O agendamento passa pelo orcamento: consume() devolve null quando
+            // o teto de tentativas foi atingido e ai nenhum alarme e agendado.
+            val delayMillis = RestartBudget.consume(this)
+            if (delayMillis == null) {
+                Log.e(TAG, "The service wasn't properly stopped, but the auto-restart budget is exhausted.")
+            } else {
+                Log.e(TAG, "The service will be restarted after ${delayMillis}ms because it wasn't properly stopped.")
+                RestartReceiver.setRestartAlarm(this, delayMillis)
+            }
         }
     }
 
@@ -235,7 +247,15 @@ class ForegroundService : Service() {
         if (ForegroundServiceUtils.isSetStopWithTaskFlag(this)) {
             stopSelf()
         } else {
-            RestartReceiver.setRestartAlarm(this, 1000)
+            // [GAUDIUM] Compartilha o mesmo orcamento do onDestroy -- senao este caminho
+            // vira a nova fonte do loop de alarmes. A primeira tentativa continua em 1s
+            // para nao perder responsividade quando o usuario so limpou a task.
+            val delayMillis = RestartBudget.consume(this, firstAttemptDelayMillis = 1000)
+            if (delayMillis == null) {
+                Log.e(TAG, "Task removed, but the auto-restart budget is exhausted.")
+            } else {
+                RestartReceiver.setRestartAlarm(this, delayMillis)
+            }
         }
     }
 
@@ -304,6 +324,10 @@ class ForegroundService : Service() {
         acquireLockMode()
 
         _isRunningServiceState.update { true }
+
+        // [GAUDIUM] So aqui o servico esta comprovadamente em foreground: o
+        // startForeground() acima passou. E o unico ponto seguro para zerar o orcamento.
+        RestartBudget.reset(this)
     }
 
     // [GAUDIUM/OEM] Reanexa o servico ao foreground sem reiniciar a task.
