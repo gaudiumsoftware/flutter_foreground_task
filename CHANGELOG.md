@@ -1,3 +1,23 @@
+## 11.0.3
+
+* [**FIX-iOS**] Include the objective-c shim in the podspec source_files so it is compiled under CocoaPods
+
+## 11.0.2
+
+* [**FIX-iOS**] Add objective-c shim for FlutterForegroundTaskPlugin
+
+## 11.0.1
+
+* [**CHORE**] Upgrade shared_preferences from 2.5.3 to 2.5.5
+* [**DOCS**] Update README
+
+## 11.0.0
+
+* [**CHORE**] Bump minimum supported SDK version to `Flutter 3.44/Dart 3.12`
+* [**FEAT**] Migrate to built-in Kotlin (KGP) [#385](https://github.com/Dev-hwang/flutter_foreground_task/pull/385)
+* [**FEAT**] Support Swift Package Manager (SPM) [#387](https://github.com/Dev-hwang/flutter_foreground_task/pull/387)
+* Check [migration_documentation](./documentation/migration_documentation.md) for changes
+
 ## 10.0.0
 
 * [**CHORE**] Bump minimum supported SDK version to `Flutter 3.38.0`

@@ -1,6 +1,5 @@
 plugins {
     id "com.android.application"
-    id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -25,16 +24,12 @@ if (flutterVersionName == null) {
 android {
     namespace "com.pravera.flutter_foreground_task_example"
 
-    compileSdk 35
+    compileSdk 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11
     }
 
     sourceSets {
@@ -72,3 +67,9 @@ flutter {
 }
 
 dependencies {}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+    }
+}

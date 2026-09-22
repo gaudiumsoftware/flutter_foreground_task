@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UserNotifications
 
 class NotificationPermissionManager {
   func checkPermission(completion: @escaping (NotificationPermission) -> Void) {
