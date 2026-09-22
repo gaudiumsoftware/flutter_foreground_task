@@ -1,3 +1,43 @@
+## 11.0.3
+
+* [**FIX-iOS**] Include the objective-c shim in the podspec source_files so it is compiled under CocoaPods
+
+## 11.0.2
+
+* [**FIX-iOS**] Add objective-c shim for FlutterForegroundTaskPlugin
+
+## 11.0.1
+
+* [**CHORE**] Upgrade shared_preferences from 2.5.3 to 2.5.5
+* [**DOCS**] Update README
+
+## 11.0.0
+
+* [**CHORE**] Bump minimum supported SDK version to `Flutter 3.44/Dart 3.12`
+* [**FEAT**] Migrate to built-in Kotlin (KGP) [#385](https://github.com/Dev-hwang/flutter_foreground_task/pull/385)
+* [**FEAT**] Support Swift Package Manager (SPM) [#387](https://github.com/Dev-hwang/flutter_foreground_task/pull/387)
+* Check [migration_documentation](./documentation/migration_documentation.md) for changes
+
+## 10.0.0
+
+* [**CHORE**] Bump minimum supported SDK version to `Flutter 3.38.0`
+* [**FEAT**] Add UIScene life cycle support for iOS [#378](https://github.com/Dev-hwang/flutter_foreground_task/pull/378)
+
+## 9.2.2
+
+* [**FIX**] Resolved frequent ForegroundServiceDidNotStartInTime and ForegroundServiceDidNotStopInTime exceptions by avoiding redundant foreground service start contracts. [#377](https://github.com/Dev-hwang/flutter_foreground_task/pull/377)
+
+## 9.2.1
+
+* [**FIX**] Prevent crash in onDestroy [#372](https://github.com/Dev-hwang/flutter_foreground_task/pull/372)
+
+## 9.2.0
+
+* [**FEAT**] Add `allowAutoRestart` option, which enables the service to automatically restart if it is terminated by the system.
+* [**FEAT**] Add `stopWithTask` option, to ensure service termination when the app UI is dismissed.
+* [**FEAT**] Add `mediaProcessing` foreground service type.
+* [**FIX**] Fix `FLAG_STOP_WITH_TASK` bitmask check error.
+
 ## 9.1.0
 
 * [**FEAT**] Support manual foregroundServiceType via serviceTypes in startService
