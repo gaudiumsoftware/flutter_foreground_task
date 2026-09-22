@@ -129,8 +129,7 @@ class BackgroundService: NSObject {
     // If it is not a notification requested by this plugin, the processing below is ignored.
     if notification.request.identifier != NOTIFICATION_ID { return }
     
-    // [GAUDIUM] Divergencia do upstream: o som customizado deve tocar mesmo com
-    // playSound == false. Ver commit 94446e4.
+    // O som customizado deve tocar mesmo com playSound == false.
     if notificationOptions.playSound || notificationContent.notificationSound != nil {
       completionHandler([.alert, .sound])
     } else {
@@ -159,8 +158,7 @@ class BackgroundService: NSObject {
   }
   
   private func requestNotification() {
-    // [GAUDIUM] Divergencia do upstream: nao publicar notificacao com corpo vazio --
-    // no iOS ela aparecia como um card em branco. Ver commit 35827d8.
+    // Não publicar notificação com corpo vazio, evitando mostrar card em branco no iOS.
     if !notificationOptions.showNotification || notificationContent.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
       return
     }
@@ -175,9 +173,6 @@ class BackgroundService: NSObject {
       content.body = self.notificationContent.text
       content.categoryIdentifier = NOTIFICATION_CATEGORY_ID
       
-      // [GAUDIUM] Divergencia do upstream: o else precisa zerar content.sound.
-      // Deixar o valor anterior fazia a notificacao repetir o ultimo som do cache
-      // mesmo quando pedido para nao emitir som. Ver commit c3cd397.
       if let soundName = self.notificationContent.notificationSound, !soundName.isEmpty {
             let soundFileURL = Bundle.main.url(forResource: soundName, withExtension: "caf")
             if let soundFileURL = soundFileURL {
@@ -186,6 +181,8 @@ class BackgroundService: NSObject {
               content.sound = .default
             }
       } else {
+          // Zerar o som para impedir que a notificação use o último som do cache mesmo quando
+          // foi solicitado não emitir som.
           content.sound = nil
       }
       

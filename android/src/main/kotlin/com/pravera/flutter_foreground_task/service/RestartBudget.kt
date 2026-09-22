@@ -5,36 +5,35 @@ import android.util.Log
 import com.pravera.flutter_foreground_task.PreferencesKey as PrefsKey
 
 /**
- * [GAUDIUM] Orcamento de reinicios automaticos do foreground service.
+ * Orçamento de reinícios automáticos do foreground service.
  *
- * Sem isso o ciclo "onDestroy -> setRestartAlarm(5s) -> RestartReceiver ->
- * startForegroundService -> startForeground() lanca -> stopForegroundService ->
- * onDestroy" se repete indefinidamente a cada 5 segundos enquanto a causa raiz
- * persistir (cota de FGS esgotada, start de FGS nao permitido em background, etc),
- * drenando bateria e acordando o device sem limite.
+ * Utilizado para controlar o ciclo "onDestroy -> setRestartAlarm(5s) -> RestartReceiver ->
+ * startForegroundService -> startForeground() -> stopForegroundService ->
+ * onDestroy" que se repete indefinidamente a cada 5 segundos para tentar iniciar o
+ * serviço novamente.
  *
- * Aqui cada tentativa consome uma fatia de um orcamento com backoff crescente e
- * teto. O contador zera quando o servico volta ao foreground com sucesso, quando
- * o app pede um start explicito, ou quando a janela de observacao expira.
+ * Aqui cada tentativa consome uma fatia de um orçamento com backoff crescente e
+ * teto. O contador deve zerar quando o servico volta ao foreground com sucesso,
+ * quando o app pede um start explicito, ou quando a janela de observação expira.
  */
 object RestartBudget {
     private val TAG = RestartBudget::class.java.simpleName
 
-    /** Atraso de cada tentativa, em ms. O tamanho do array e o teto de tentativas. */
+    /** Atraso de cada tentativa, em ms. */
     private val BACKOFF_DELAYS = intArrayOf(
-        5_000,     // 5s
-        30_000,    // 30s
-        120_000,   // 2min
-        600_000,   // 10min
-        1_800_000  // 30min
+        5_000,     // 5 s
+        30_000,    // 30 s
+        120_000,   // 2 min
+        600_000,   // 10 min
+        1_800_000  // 30 min
     )
 
-    /** Passada esta janela sem nenhuma tentativa, o orcamento volta ao cheio. */
+    /** Passada esta janela sem nenhuma tentativa, o orçamento volta ao cheio. */
     private const val WINDOW_MILLIS = 60 * 60 * 1000L // 1h
 
     /**
      * Consome uma tentativa e devolve o atraso a usar no alarme, ou null quando o
-     * orcamento acabou -- nesse caso o chamador NAO deve agendar alarme algum.
+     * orçamento acabou -- nesse caso o chamador NÃO deve agendar alarme algum.
      *
      * @param firstAttemptDelayMillis atraso da primeira tentativa da janela. Existe
      *   porque o onTaskRemoved quer reagir mais rapido (1s) que o onDestroy (5s).
@@ -46,7 +45,7 @@ object RestartBudget {
         val windowStart = prefs.getLong(PrefsKey.RESTART_WINDOW_START, 0L)
         var attempts = prefs.getInt(PrefsKey.RESTART_ATTEMPT_COUNT, 0)
 
-        // Janela expirada (ou primeira tentativa): recomeca o orcamento.
+        // Janela expirada ou primeira tentativa: recomeça o orçamento.
         val isNewWindow = windowStart == 0L || (now - windowStart) > WINDOW_MILLIS
         if (isNewWindow) {
             attempts = 0
@@ -71,7 +70,7 @@ object RestartBudget {
         return delay
     }
 
-    /** Zera o orcamento. Chamar quando o servico voltou a rodar em foreground. */
+    /** Zera o orçamento. Chamar quando o serviço voltou a rodar em foreground. */
     fun reset(context: Context) {
         val prefs = context.getSharedPreferences(PrefsKey.RESTART_BUDGET_PREFS, Context.MODE_PRIVATE)
         if (prefs.getInt(PrefsKey.RESTART_ATTEMPT_COUNT, 0) == 0) {
