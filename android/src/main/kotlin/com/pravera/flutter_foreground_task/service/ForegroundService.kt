@@ -133,18 +133,12 @@ class ForegroundService : Service() {
         isTimeout = false
         loadDataFromPreferences()
 
-        // [GAUDIUM] Vindo do upstream 9.2.0 (stopWithTask). ATENCAO: quando stopWithTask
-        // esta setado, este bloco derruba o servico assim que TODAS as activities pausam,
-        // ou seja, quando o app vai para background -- o oposto do que um servico de
-        // polling precisa. So fica ativo se o lado Dart passar stopWithTask
-        // explicitamente; com o default (null) o bloco nunca instala nada.
-        // Se algum dia passarmos stopWithTask: true, revisar este comportamento antes.
+        // Com stopWithTask ativo, o serviço é derrubado quando todas as activities pausam.
         val prefs = getSharedPreferences(PrefsKey.FOREGROUND_TASK_OPTIONS_PREFS, Context.MODE_PRIVATE)
         if (prefs.contains(PrefsKey.STOP_WITH_TASK) && prefs.getBoolean(PrefsKey.STOP_WITH_TASK, false)) {
             (application as? Application)?.let {
                 TrackVisibilityUtils.install(it) {
-                    // [GAUDIUM/OEM] upstream chama stopForegroundService() sem argumento;
-                    // aqui precisa ser true para preservar o reattach de OEM.
+                    // Passar true para preservar reattach de fabricante.
                     stopForegroundService(true)
                 }
             }
