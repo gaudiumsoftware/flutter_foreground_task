@@ -7,6 +7,7 @@ import 'foreground_task_options.dart';
 import 'notification_button.dart';
 import 'notification_icon.dart';
 import 'notification_options.dart';
+import 'notification_progress.dart';
 import 'notification_vibrate_pattern.dart';
 
 class ServiceStartOptions {
@@ -21,6 +22,11 @@ class ServiceStartOptions {
     this.notificationIcon,
     this.notificationButtons,
     this.notificationInitialRoute,
+    this.notificationLargeIconPath,
+    this.notificationSubText,
+    this.notificationProgress,
+    this.notificationUseCustomLayout,
+    this.notificationTrackImagePath,
     this.callback,
   });
 
@@ -34,6 +40,27 @@ class ServiceStartOptions {
   final NotificationIcon? notificationIcon;
   final List<NotificationButton>? notificationButtons;
   final String? notificationInitialRoute;
+
+  /// Caminho de um arquivo de imagem exibido como ícone grande. Só Android.
+  final String? notificationLargeIconPath;
+
+  /// Texto exibido ao lado do nome do app no cabeçalho. Só Android.
+  final String? notificationSubText;
+
+  /// Barra de progresso da notificação. Só Android.
+  final NotificationProgress? notificationProgress;
+
+  /// Usa um corpo customizado na notificação, com título maior, foto e trilha.
+  ///
+  /// O cabeçalho continua sendo do sistema. Só Android.
+  final bool? notificationUseCustomLayout;
+
+  /// Caminho da imagem da trilha da rota, exibida no corpo customizado.
+  ///
+  /// A imagem chega pronta porque o Android não permite posicionar um ícone
+  /// sobre uma barra de progresso. Só Android.
+  final String? notificationTrackImagePath;
+
   final Function? callback;
 
   Map<String, dynamic> toJson(Platform platform) {
@@ -46,6 +73,11 @@ class ServiceStartOptions {
       'icon': notificationIcon?.toJson(),
       'buttons': notificationButtons?.map((e) => e.toJson()).toList(),
       'initialRoute': notificationInitialRoute,
+      'notificationLargeIconPath': notificationLargeIconPath,
+      'notificationSubText': notificationSubText,
+      'notificationProgress': notificationProgress?.toJson(),
+      'notificationUseCustomLayout': notificationUseCustomLayout,
+      'notificationTrackImagePath': notificationTrackImagePath,
     };
 
     if (platform.isAndroid) {
@@ -71,6 +103,11 @@ class ServiceUpdateOptions {
     this.notificationIcon,
     this.notificationButtons,
     this.notificationInitialRoute,
+    this.notificationLargeIconPath,
+    this.notificationSubText,
+    this.notificationProgress,
+    this.notificationUseCustomLayout,
+    this.notificationTrackImagePath,
     this.callback,
     this.notificationSound,
     this.notificationVibratePattern,
@@ -82,6 +119,31 @@ class ServiceUpdateOptions {
   final NotificationIcon? notificationIcon;
   final List<NotificationButton>? notificationButtons;
   final String? notificationInitialRoute;
+
+  /// Caminho de um arquivo de imagem exibido como ícone grande. Só Android.
+  ///
+  /// Nulo remove o ícone: a atualização define a notificação exatamente como
+  /// descrita, sem herdar o que estava antes.
+  final String? notificationLargeIconPath;
+
+  /// Texto exibido ao lado do nome do app no cabeçalho. Só Android. Nulo
+  /// remove.
+  final String? notificationSubText;
+
+  /// Barra de progresso da notificação. Só Android. Nulo remove.
+  final NotificationProgress? notificationProgress;
+
+  /// Usa um corpo customizado na notificação, com título maior, foto e trilha.
+  ///
+  /// O cabeçalho continua sendo do sistema. Só Android.
+  final bool? notificationUseCustomLayout;
+
+  /// Caminho da imagem da trilha da rota, exibida no corpo customizado.
+  ///
+  /// A imagem chega pronta porque o Android não permite posicionar um ícone
+  /// sobre uma barra de progresso. Só Android.
+  final String? notificationTrackImagePath;
+
   final Function? callback;
   final String? notificationSound;
   final NotificationVibratePattern? notificationVibratePattern;
@@ -93,6 +155,11 @@ class ServiceUpdateOptions {
       'icon': notificationIcon?.toJson(),
       'buttons': notificationButtons?.map((e) => e.toJson()).toList(),
       'initialRoute': notificationInitialRoute,
+      'notificationLargeIconPath': notificationLargeIconPath,
+      'notificationSubText': notificationSubText,
+      'notificationProgress': notificationProgress?.toJson(),
+      'notificationUseCustomLayout': notificationUseCustomLayout,
+      'notificationTrackImagePath': notificationTrackImagePath,
       'notificationSound': notificationSound,
       'notificationVibratePattern': notificationVibratePattern?.name,
     };

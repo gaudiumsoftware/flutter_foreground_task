@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Corpo customizado da notificação expandida.
+
+  Usado com DecoratedCustomViewStyle: o cabeçalho (ícone, nome do app, texto
+  auxiliar e seta) continua sendo desenhado pelo sistema, e só este bloco é
+  nosso. É o que sobrevive melhor às restrições que o Android 12 impôs a
+  notificações totalmente customizadas.
+
+  Sem recuo à esquerda: o DecoratedCustomViewStyle já posiciona o corpo
+  alinhado ao texto do cabeçalho, que é a convenção do sistema. Alinhar ao
+  ícone exigiria margem negativa, que o container recorta.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="0dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/fft_notification_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:maxLines="2"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/fft_notification_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Compat.Notification"
+                android:textSize="14sp"
+                android:layout_marginTop="2dp"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/fft_notification_photo"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="12dp"
+            android:scaleType="fitCenter"
+            android:adjustViewBounds="true"
+            android:contentDescription="@null" />
+    </LinearLayout>
+
+    <!--
+      A trilha chega pronta como imagem. O RemoteViews não permite desenhar um
+      ícone numa posição arbitrária sobre uma barra, então quem compõe a linha,
+      as pontas e o veículo é o app, que já rasteriza marcadores do mapa do
+      mesmo jeito.
+    -->
+    <ImageView
+        android:id="@+id/fft_notification_track"
+        android:layout_width="match_parent"
+        android:layout_height="34dp"
+        android:layout_marginTop="10dp"
+        android:scaleType="fitXY"
+        android:contentDescription="@null" />
+</LinearLayout>

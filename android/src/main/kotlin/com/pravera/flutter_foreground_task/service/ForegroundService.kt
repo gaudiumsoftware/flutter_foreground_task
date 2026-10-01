@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.app.*
 import android.content.*
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.media.RingtoneManager
 import android.net.Uri
@@ -13,10 +15,13 @@ import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
 import android.util.Log
+import android.view.View
+import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.pravera.flutter_foreground_task.FlutterForegroundTaskLifecycleListener
+import com.pravera.flutter_foreground_task.R
 import com.pravera.flutter_foreground_task.RequestCode
 import com.pravera.flutter_foreground_task.models.*
 import com.pravera.flutter_foreground_task.utils.ForegroundServiceUtils
@@ -24,6 +29,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.intArrayOf
+import java.io.File
 import java.util.concurrent.Executors
 
 /**
@@ -35,6 +41,10 @@ import java.util.concurrent.Executors
 class ForegroundService : Service() {
     companion object {
         private val TAG = ForegroundService::class.java.simpleName
+
+        /// Teto de pixels por bitmap embarcado no RemoteViews.
+        /// 1024 x 256 a 4 bytes por pixel dá cerca de 1 MB.
+        private const val MAX_BITMAP_PIXELS = 1024 * 256
 
         private const val ACTION_NOTIFICATION_PRESSED = "onNotificationPressed"
         private const val ACTION_NOTIFICATION_DISMISSED = "onNotificationDismissed"
@@ -386,6 +396,26 @@ class ForegroundService : Service() {
             builder.style = Notification.BigTextStyle()
             builder.setVisibility(notificationOptions.visibility)
             builder.setOnlyAlertOnce(notificationOptions.onlyAlertOnce)
+            notificationContent.subText?.let { builder.setSubText(it) }
+            // Com o corpo customizado a foto é desenhada por ele. Definir o
+            // ícone grande aqui também duplicaria a imagem e faria o sistema
+            // reservar a largura dele, espremendo o título.
+            if (!notificationContent.useCustomLayout) {
+                loadLargeIcon(notificationContent.largeIconPath)?.let {
+                    builder.setLargeIcon(it)
+                }
+            }
+            notificationContent.progress?.let {
+                builder.setProgress(it.max, it.current, it.indeterminate)
+            }
+            if (notificationContent.useCustomLayout) {
+                // Só a expandida é customizada. A recolhida tem altura fixa e
+                // menor do que o corpo customizado, o que cortava a segunda
+                // linha no meio; deixá-la com o template padrão resolve e é o
+                // que o protótipo desenha de qualquer forma.
+                builder.style = Notification.DecoratedCustomViewStyle()
+                builder.setCustomBigContentView(buildCustomView(notificationContent))
+            }
             if (iconBackgroundColor != null) {
                 builder.setColor(iconBackgroundColor)
             }
@@ -413,6 +443,22 @@ class ForegroundService : Service() {
             builder.setStyle(NotificationCompat.BigTextStyle().bigText(notificationContent.text))
             builder.setVisibility(notificationOptions.visibility)
             builder.setOnlyAlertOnce(notificationOptions.onlyAlertOnce)
+            notificationContent.subText?.let { builder.setSubText(it) }
+            // Com o corpo customizado a foto é desenhada por ele. Definir o
+            // ícone grande aqui também duplicaria a imagem e faria o sistema
+            // reservar a largura dele, espremendo o título.
+            if (!notificationContent.useCustomLayout) {
+                loadLargeIcon(notificationContent.largeIconPath)?.let {
+                    builder.setLargeIcon(it)
+                }
+            }
+            notificationContent.progress?.let {
+                builder.setProgress(it.max, it.current, it.indeterminate)
+            }
+            if (notificationContent.useCustomLayout) {
+                builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
+                builder.setCustomBigContentView(buildCustomView(notificationContent))
+            }
             if (iconBackgroundColor != null) {
                 builder.color = iconBackgroundColor
             }
@@ -662,6 +708,88 @@ class ForegroundService : Service() {
         } else {
             SpannableString(text)
         }
+    }
+
+    /// Monta o corpo customizado da notificação expandida.
+    ///
+    /// Só o corpo: o cabeçalho continua sendo do sistema, via
+    /// DecoratedCustomViewStyle. A trilha chega pronta como imagem porque o
+    /// RemoteViews não permite posicionar um ícone sobre uma barra.
+    private fun buildCustomView(
+        notificationContent: NotificationContent
+    ): RemoteViews {
+        val views = RemoteViews(packageName, R.layout.fft_notification_expanded)
+
+        views.setTextViewText(R.id.fft_notification_title, notificationContent.title)
+
+        if (notificationContent.text.isBlank()) {
+            views.setViewVisibility(R.id.fft_notification_text, View.GONE)
+        } else {
+            views.setTextViewText(R.id.fft_notification_text, notificationContent.text)
+            views.setViewVisibility(R.id.fft_notification_text, View.VISIBLE)
+        }
+
+        val photo = loadLargeIcon(notificationContent.largeIconPath)
+        if (photo == null) {
+            views.setViewVisibility(R.id.fft_notification_photo, View.GONE)
+        } else {
+            views.setImageViewBitmap(R.id.fft_notification_photo, photo)
+            views.setViewVisibility(R.id.fft_notification_photo, View.VISIBLE)
+        }
+
+        val track = loadLargeIcon(notificationContent.trackImagePath)
+        if (track == null) {
+            views.setViewVisibility(R.id.fft_notification_track, View.GONE)
+        } else {
+            views.setImageViewBitmap(R.id.fft_notification_track, track)
+            views.setViewVisibility(R.id.fft_notification_track, View.VISIBLE)
+        }
+
+        return views
+    }
+
+    /// Carrega o ícone grande a partir de um arquivo no disco.
+    ///
+    /// O arquivo é gravado pelo app, não pelo plugin. Uma falha de leitura não
+    /// pode derrubar a notificação: sem imagem, a notificação é exibida sem o
+    /// ícone grande.
+    private fun loadLargeIcon(path: String?): Bitmap? {
+        if (path.isNullOrBlank()) {
+            return null
+        }
+
+        return try {
+            val file = File(path)
+            if (!file.exists()) {
+                null
+            } else {
+                BitmapFactory.decodeFile(path, sampledOptions(path))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "loadLargeIcon", e)
+            null
+        }
+    }
+
+    /// Calcula a subamostragem necessária para o bitmap caber no limite.
+    ///
+    /// Um RemoteViews atravessa o Binder até a interface do sistema, e a
+    /// transação comporta cerca de 1 MB. Uma imagem grande o bastante faz a
+    /// notificação ser aceita e nunca desenhada, sem erro no log — então o
+    /// limite é imposto aqui, e não confiado a quem chama.
+    private fun sampledOptions(path: String): BitmapFactory.Options {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(path, bounds)
+
+        var sampleSize = 1
+        while (
+            (bounds.outWidth / sampleSize) * (bounds.outHeight / sampleSize) >
+            MAX_BITMAP_PIXELS
+        ) {
+            sampleSize *= 2
+        }
+
+        return BitmapFactory.Options().apply { inSampleSize = sampleSize }
     }
 
     private fun buildNotificationActions(
