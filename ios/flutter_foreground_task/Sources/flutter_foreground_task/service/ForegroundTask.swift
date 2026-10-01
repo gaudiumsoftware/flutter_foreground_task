@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Flutter
 
 private let BG_ISOLATE_NAME = "flutter_foreground_task/backgroundIsolate"
 private let BG_CHANNEL_NAME = "flutter_foreground_task/background"

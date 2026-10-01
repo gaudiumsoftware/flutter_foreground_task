@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Flutter
 
 class ForegroundTaskLifecycleListeners : FlutterForegroundTaskLifecycleListener {
   private var listeners: Array<FlutterForegroundTaskLifecycleListener> = []

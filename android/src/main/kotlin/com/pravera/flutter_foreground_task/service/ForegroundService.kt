@@ -19,7 +19,8 @@ import androidx.core.content.ContextCompat
 import com.pravera.flutter_foreground_task.FlutterForegroundTaskLifecycleListener
 import com.pravera.flutter_foreground_task.RequestCode
 import com.pravera.flutter_foreground_task.models.*
-import com.pravera.flutter_foreground_task.utils.ForegroundServiceUtils
+import com.pravera.flutter_foreground_task.utils.*
+import com.pravera.flutter_foreground_task.PreferencesKey as PrefsKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -131,6 +132,17 @@ class ForegroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         isTimeout = false
         loadDataFromPreferences()
+
+        // Com stopWithTask ativo, o serviço é derrubado quando todas as activities pausam.
+        val prefs = getSharedPreferences(PrefsKey.FOREGROUND_TASK_OPTIONS_PREFS, Context.MODE_PRIVATE)
+        if (prefs.contains(PrefsKey.STOP_WITH_TASK) && prefs.getBoolean(PrefsKey.STOP_WITH_TASK, false)) {
+            (application as? Application)?.let {
+                TrackVisibilityUtils.install(it) {
+                    // Passar true para preservar reattach de fabricante.
+                    stopForegroundService(true)
+                }
+            }
+        }
 
         var action = foregroundServiceStatus.action
         val isSetStopWithTaskFlag = ForegroundServiceUtils.isSetStopWithTaskFlag(this)

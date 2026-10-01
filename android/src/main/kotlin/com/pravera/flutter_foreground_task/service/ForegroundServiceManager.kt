@@ -62,7 +62,10 @@ class ForegroundServiceManager {
 		ForegroundTaskOptions.updateData(context, argsMap)
 		ForegroundTaskData.updateData(context, argsMap)
 		NotificationContent.updateData(context, argsMap)
-		ContextCompat.startForegroundService(context, nIntent)
+		// Use startService instead of startForegroundService because the service
+		// is already running in the foreground and we only need to deliver the
+		// update command. This avoids the startForeground() contract requirement.
+		context.startService(nIntent)
 	}
 
 	/** Stop the foreground service. */
@@ -78,7 +81,10 @@ class ForegroundServiceManager {
 		ForegroundTaskOptions.clearData(context)
 		ForegroundTaskData.clearData(context)
 		NotificationContent.clearData(context)
-		ContextCompat.startForegroundService(context, nIntent)
+		// Use startService instead of startForegroundService because the service
+		// is already running in the foreground and we only need to deliver the
+		// stop command. This avoids the startForeground() contract requirement.
+		context.startService(nIntent)
 	}
 
 	/** Send data to TaskHandler. */

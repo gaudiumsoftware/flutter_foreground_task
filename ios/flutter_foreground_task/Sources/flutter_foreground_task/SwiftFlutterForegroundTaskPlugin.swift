@@ -16,10 +16,21 @@ public class SwiftFlutterForegroundTaskPlugin: NSObject, FlutterPlugin {
     instance.initServices()
     instance.initChannels(registrar.messenger())
     registrar.addApplicationDelegate(instance)
+    if #available(iOS 13.0, *) {
+      registrar.addSceneDelegate(instance)
+    }
   }
   
-  public static func setPluginRegistrantCallback(_ callback: @escaping FlutterPluginRegistrantCallback) {
+  @objc public static func setPluginRegistrantCallback(_ callback: @escaping FlutterPluginRegistrantCallback) {
     registerPlugins = callback
+  }
+
+  @objc public static func registerAppRefreshForBackgroundLaunch() {
+    if #available(iOS 13.0, *) {
+      let permitted = Bundle.main.object(forInfoDictionaryKey: "BGTaskSchedulerPermittedIdentifiers") as? [String] ?? []
+      guard permitted.contains(refreshIdentifier) else { return }
+      registerAppRefresh()
+    }
   }
   
   public static func addTaskLifecycleListener(_ listener: FlutterForegroundTaskLifecycleListener) {
@@ -114,7 +125,7 @@ public class SwiftFlutterForegroundTaskPlugin: NSObject, FlutterPlugin {
     // Chance to handle onDestroy before app terminates
     sleep(5)
   }
-  
+
   // ================= Service Delegate =================
   @available(iOS 10.0, *)
   public func userNotificationCenter(_ center: UNUserNotificationCenter,
@@ -132,9 +143,12 @@ public class SwiftFlutterForegroundTaskPlugin: NSObject, FlutterPlugin {
   
   // ============== Background App Refresh ==============
   public static var refreshIdentifier: String = "com.pravera.flutter_foreground_task.refresh"
+  private static var isBgTaskRegistered: Bool = false
 
   @available(iOS 13.0, *)
   private static func registerAppRefresh() {
+    guard !isBgTaskRegistered else { return }
+    isBgTaskRegistered = true
     BGTaskScheduler.shared.register(forTaskWithIdentifier: refreshIdentifier, using: nil) { task in
       handleAppRefresh(task: task as! BGAppRefreshTask)
     }
@@ -187,5 +201,12 @@ class AppRefreshOperation: Operation {
     }
     
     semaphore.wait()
+  }
+}
+
+@available(iOS 13.0, *)
+extension SwiftFlutterForegroundTaskPlugin: FlutterSceneLifeCycleDelegate {
+  public func sceneDidEnterBackground(_ scene: UIScene) {
+    SwiftFlutterForegroundTaskPlugin.scheduleAppRefresh()
   }
 }
