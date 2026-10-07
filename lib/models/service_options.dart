@@ -27,6 +27,8 @@ class ServiceStartOptions {
     this.notificationProgress,
     this.notificationUseCustomLayout,
     this.notificationTrackImagePath,
+    this.notificationTextIconName,
+    this.notificationEmphasisText,
     this.callback,
   });
 
@@ -61,6 +63,14 @@ class ServiceStartOptions {
   /// sobre uma barra de progresso. Só Android.
   final String? notificationTrackImagePath;
 
+  /// Nome de um drawable do app exibido à esquerda do corpo.
+  ///
+  /// Vetor, para acompanhar o tema da notificação. Só Android.
+  final String? notificationTextIconName;
+
+  /// Linha exibida com mais destaque que o título. Só Android.
+  final String? notificationEmphasisText;
+
   final Function? callback;
 
   Map<String, dynamic> toJson(Platform platform) {
@@ -78,6 +88,8 @@ class ServiceStartOptions {
       'notificationProgress': notificationProgress?.toJson(),
       'notificationUseCustomLayout': notificationUseCustomLayout,
       'notificationTrackImagePath': notificationTrackImagePath,
+      'notificationTextIconName': notificationTextIconName,
+      'notificationEmphasisText': notificationEmphasisText,
     };
 
     if (platform.isAndroid) {
@@ -108,6 +120,8 @@ class ServiceUpdateOptions {
     this.notificationProgress,
     this.notificationUseCustomLayout,
     this.notificationTrackImagePath,
+    this.notificationTextIconName,
+    this.notificationEmphasisText,
     this.callback,
     this.notificationSound,
     this.notificationVibratePattern,
@@ -144,6 +158,14 @@ class ServiceUpdateOptions {
   /// sobre uma barra de progresso. Só Android.
   final String? notificationTrackImagePath;
 
+  /// Nome de um drawable do app exibido à esquerda do corpo.
+  ///
+  /// Vetor, para acompanhar o tema da notificação. Só Android.
+  final String? notificationTextIconName;
+
+  /// Linha exibida com mais destaque que o título. Só Android.
+  final String? notificationEmphasisText;
+
   final Function? callback;
   final String? notificationSound;
   final NotificationVibratePattern? notificationVibratePattern;
@@ -160,6 +182,8 @@ class ServiceUpdateOptions {
       'notificationProgress': notificationProgress?.toJson(),
       'notificationUseCustomLayout': notificationUseCustomLayout,
       'notificationTrackImagePath': notificationTrackImagePath,
+      'notificationTextIconName': notificationTextIconName,
+      'notificationEmphasisText': notificationEmphasisText,
       'notificationSound': notificationSound,
       'notificationVibratePattern': notificationVibratePattern?.name,
     };

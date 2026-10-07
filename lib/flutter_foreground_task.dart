@@ -113,6 +113,8 @@ class FlutterForegroundTask {
     NotificationProgress? notificationProgress,
     bool? notificationUseCustomLayout,
     String? notificationTrackImagePath,
+    String? notificationTextIconName,
+    String? notificationEmphasisText,
     Function? callback,
   }) async {
     try {
@@ -140,6 +142,8 @@ class FlutterForegroundTask {
         notificationProgress: notificationProgress,
         notificationUseCustomLayout: notificationUseCustomLayout,
         notificationTrackImagePath: notificationTrackImagePath,
+        notificationTextIconName: notificationTextIconName,
+      notificationEmphasisText: notificationEmphasisText,
         callback: callback,
       );
 
@@ -181,6 +185,8 @@ class FlutterForegroundTask {
     NotificationProgress? notificationProgress,
     bool? notificationUseCustomLayout,
     String? notificationTrackImagePath,
+    String? notificationTextIconName,
+    String? notificationEmphasisText,
     Function? callback,
     String? notificationSound,
     NotificationVibratePattern? notificationVibratePattern,
@@ -202,6 +208,8 @@ class FlutterForegroundTask {
         notificationProgress: notificationProgress,
         notificationUseCustomLayout: notificationUseCustomLayout,
         notificationTrackImagePath: notificationTrackImagePath,
+        notificationTextIconName: notificationTextIconName,
+      notificationEmphasisText: notificationEmphasisText,
         callback: callback,
         notificationSound: notificationSound,
         notificationVibratePattern: notificationVibratePattern,

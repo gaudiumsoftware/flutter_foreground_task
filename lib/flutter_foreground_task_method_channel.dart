@@ -51,6 +51,8 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
     NotificationProgress? notificationProgress,
     bool? notificationUseCustomLayout,
     String? notificationTrackImagePath,
+    String? notificationTextIconName,
+    String? notificationEmphasisText,
     Function? callback,
   }) async {
     final Map<String, dynamic> optionsJson = ServiceStartOptions(
@@ -69,6 +71,8 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
       notificationProgress: notificationProgress,
       notificationUseCustomLayout: notificationUseCustomLayout,
       notificationTrackImagePath: notificationTrackImagePath,
+      notificationTextIconName: notificationTextIconName,
+      notificationEmphasisText: notificationEmphasisText,
       callback: callback,
     ).toJson(platform);
 
@@ -93,6 +97,8 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
     NotificationProgress? notificationProgress,
     bool? notificationUseCustomLayout,
     String? notificationTrackImagePath,
+    String? notificationTextIconName,
+    String? notificationEmphasisText,
     Function? callback,
     String? notificationSound,
     NotificationVibratePattern? notificationVibratePattern,
@@ -109,6 +115,8 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
       notificationProgress: notificationProgress,
       notificationUseCustomLayout: notificationUseCustomLayout,
       notificationTrackImagePath: notificationTrackImagePath,
+      notificationTextIconName: notificationTextIconName,
+      notificationEmphasisText: notificationEmphasisText,
       notificationSound: notificationSound,
       notificationVibratePattern: notificationVibratePattern,
       callback: callback,

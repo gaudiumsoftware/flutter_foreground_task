@@ -15,6 +15,7 @@ import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
 import android.util.Log
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
@@ -722,11 +723,33 @@ class ForegroundService : Service() {
 
         views.setTextViewText(R.id.fft_notification_title, notificationContent.title)
 
+        val emphasis = notificationContent.emphasisText
+        if (emphasis.isNullOrBlank()) {
+            views.setViewVisibility(R.id.fft_notification_emphasis, View.GONE)
+            views.setTextViewTextSize(
+                R.id.fft_notification_title, TypedValue.COMPLEX_UNIT_SP, 22f
+            )
+        } else {
+            views.setTextViewText(R.id.fft_notification_emphasis, emphasis)
+            views.setViewVisibility(R.id.fft_notification_emphasis, View.VISIBLE)
+            views.setTextViewTextSize(
+                R.id.fft_notification_title, TypedValue.COMPLEX_UNIT_SP, 16f
+            )
+        }
+
         if (notificationContent.text.isBlank()) {
             views.setViewVisibility(R.id.fft_notification_text, View.GONE)
         } else {
             views.setTextViewText(R.id.fft_notification_text, notificationContent.text)
             views.setViewVisibility(R.id.fft_notification_text, View.VISIBLE)
+        }
+
+        val textIconResId = resolveDrawableResId(notificationContent.textIconName)
+        if (textIconResId == 0) {
+            views.setViewVisibility(R.id.fft_notification_text_icon, View.GONE)
+        } else {
+            views.setImageViewResource(R.id.fft_notification_text_icon, textIconResId)
+            views.setViewVisibility(R.id.fft_notification_text_icon, View.VISIBLE)
         }
 
         val photo = loadLargeIcon(notificationContent.largeIconPath)
@@ -746,6 +769,16 @@ class ForegroundService : Service() {
         }
 
         return views
+    }
+
+    /// Resolve um drawable do app pelo nome. Retorna 0 quando não existe, que é
+    /// o valor que o Android usa para "nenhum resource".
+    private fun resolveDrawableResId(name: String?): Int {
+        if (name.isNullOrBlank()) {
+            return 0
+        }
+
+        return resources.getIdentifier(name, "drawable", packageName)
     }
 
     /// Carrega o ícone grande a partir de um arquivo no disco.

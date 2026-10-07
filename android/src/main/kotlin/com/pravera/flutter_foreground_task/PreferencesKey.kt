@@ -45,6 +45,8 @@ object PreferencesKey {
     const val NOTIFICATION_SUB_TEXT = "notificationSubText"
     const val NOTIFICATION_USE_CUSTOM_LAYOUT = "notificationUseCustomLayout"
     const val NOTIFICATION_TRACK_IMAGE_PATH = "notificationTrackImagePath"
+    const val NOTIFICATION_TEXT_ICON_NAME = "notificationTextIconName"
+    const val NOTIFICATION_EMPHASIS_TEXT = "notificationEmphasisText"
     const val NOTIFICATION_PROGRESS = "notificationProgress"
     const val NOTIFICATION_INITIAL_ROUTE = "initialRoute"
     const val NOTIFICATION_SOUND = "notificationSound"
