@@ -132,8 +132,6 @@ data class NotificationContent(
                 putString(PrefsKey.NOTIFICATION_INITIAL_ROUTE, initialRoute)
                 putString(PrefsKey.NOTIFICATION_SOUND, sound)
                 putString(PrefsKey.NOTIFICATION_VIBRATE_PATTERN, vibratePattern)
-                // Estes três definem a notificação exatamente como descrita:
-                // ausente significa remover, e não manter o valor anterior.
                 putString(PrefsKey.NOTIFICATION_LARGE_ICON_PATH, largeIconPath)
                 putString(PrefsKey.NOTIFICATION_SUB_TEXT, subText)
                 putBoolean(PrefsKey.NOTIFICATION_USE_CUSTOM_LAYOUT, useCustomLayout)
@@ -193,8 +191,6 @@ data class NotificationContent(
                 initialRoute?.let { putString(PrefsKey.NOTIFICATION_INITIAL_ROUTE, it) }
                 putString(PrefsKey.NOTIFICATION_SOUND, sound)
                 putString(PrefsKey.NOTIFICATION_VIBRATE_PATTERN, vibratePattern)
-                // Estes três definem a notificação exatamente como descrita:
-                // ausente significa remover, e não manter o valor anterior.
                 putString(PrefsKey.NOTIFICATION_LARGE_ICON_PATH, largeIconPath)
                 putString(PrefsKey.NOTIFICATION_SUB_TEXT, subText)
                 putBoolean(PrefsKey.NOTIFICATION_USE_CUSTOM_LAYOUT, useCustomLayout)
