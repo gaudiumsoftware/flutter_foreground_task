@@ -15,6 +15,7 @@ import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
 import android.util.Log
+import android.util.LruCache
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
@@ -43,9 +44,14 @@ class ForegroundService : Service() {
     companion object {
         private val TAG = ForegroundService::class.java.simpleName
 
-        /// Teto de pixels por bitmap embarcado no RemoteViews.
-        /// 1024 x 256 a 4 bytes por pixel dá cerca de 1 MB.
-        private const val MAX_BITMAP_PIXELS = 1024 * 256
+        /// Limites, em pixels, de cada bitmap embarcado na notificação.
+        private const val PHOTO_MAX_SIZE = 256
+        private const val TRACK_MAX_WIDTH = 1080
+        private const val TRACK_MAX_HEIGHT = 128
+
+        /// Folga para a foto e a trilha no limite, com espaço para a troca de
+        /// versão de um arquivo.
+        private const val BITMAP_CACHE_BYTES = 2 * 1024 * 1024
 
         private const val ACTION_NOTIFICATION_PRESSED = "onNotificationPressed"
         private const val ACTION_NOTIFICATION_DISMISSED = "onNotificationDismissed"
@@ -110,6 +116,13 @@ class ForegroundService : Service() {
 
     // Executor para tocar sons em thread separada
     private val soundExecutor = Executors.newSingleThreadExecutor()
+
+    // Bitmaps já decodificados, por arquivo e limite.
+    private val bitmapCache = object : LruCache<String, CachedBitmap>(BITMAP_CACHE_BYTES) {
+        override fun sizeOf(key: String, value: CachedBitmap): Int {
+            return value.bitmap.byteCount
+        }
+    }
 
     // A broadcast receiver that handles intents that occur in the foreground service.
     private var broadcastReceiver = object : BroadcastReceiver() {
@@ -206,6 +219,7 @@ class ForegroundService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         soundExecutor.shutdown()
+        bitmapCache.evictAll()
         val isTimeout = this.isTimeout
         destroyForegroundTask(isTimeout)
         stopForegroundService(false)
@@ -402,7 +416,7 @@ class ForegroundService : Service() {
             // ícone grande aqui também duplicaria a imagem e faria o sistema
             // reservar a largura dele, espremendo o título.
             if (!notificationContent.useCustomLayout) {
-                loadLargeIcon(notificationContent.largeIconPath)?.let {
+                loadPhoto(notificationContent.largeIconPath)?.let {
                     builder.setLargeIcon(it)
                 }
             }
@@ -449,7 +463,7 @@ class ForegroundService : Service() {
             // ícone grande aqui também duplicaria a imagem e faria o sistema
             // reservar a largura dele, espremendo o título.
             if (!notificationContent.useCustomLayout) {
-                loadLargeIcon(notificationContent.largeIconPath)?.let {
+                loadPhoto(notificationContent.largeIconPath)?.let {
                     builder.setLargeIcon(it)
                 }
             }
@@ -752,7 +766,7 @@ class ForegroundService : Service() {
             views.setViewVisibility(R.id.fft_notification_text_icon, View.VISIBLE)
         }
 
-        val photo = loadLargeIcon(notificationContent.largeIconPath)
+        val photo = loadPhoto(notificationContent.largeIconPath)
         if (photo == null) {
             views.setViewVisibility(R.id.fft_notification_photo, View.GONE)
         } else {
@@ -760,7 +774,9 @@ class ForegroundService : Service() {
             views.setViewVisibility(R.id.fft_notification_photo, View.VISIBLE)
         }
 
-        val track = loadLargeIcon(notificationContent.trackImagePath)
+        val track = loadBitmap(
+            notificationContent.trackImagePath, TRACK_MAX_WIDTH, TRACK_MAX_HEIGHT
+        )
         if (track == null) {
             views.setViewVisibility(R.id.fft_notification_track, View.GONE)
         } else {
@@ -781,12 +797,17 @@ class ForegroundService : Service() {
         return resources.getIdentifier(name, "drawable", packageName)
     }
 
-    /// Carrega o ícone grande a partir de um arquivo no disco.
+    /// Carrega a foto, usada tanto como ícone grande quanto no corpo customizado.
+    private fun loadPhoto(path: String?): Bitmap? {
+        return loadBitmap(path, PHOTO_MAX_SIZE, PHOTO_MAX_SIZE)
+    }
+
+    /// Carrega uma imagem do disco reduzida para caber em maxWidth x maxHeight.
     ///
     /// O arquivo é gravado pelo app, não pelo plugin. Uma falha de leitura não
     /// pode derrubar a notificação: sem imagem, a notificação é exibida sem o
     /// ícone grande.
-    private fun loadLargeIcon(path: String?): Bitmap? {
+    private fun loadBitmap(path: String?, maxWidth: Int, maxHeight: Int): Bitmap? {
         if (path.isNullOrBlank()) {
             return null
         }
@@ -796,33 +817,73 @@ class ForegroundService : Service() {
             if (!file.exists()) {
                 null
             } else {
-                BitmapFactory.decodeFile(path, sampledOptions(path))
+                val key = "$path|$maxWidth|$maxHeight"
+                val lastModified = file.lastModified()
+                val length = file.length()
+                val cached = bitmapCache.get(key)
+                if (cached != null &&
+                    cached.lastModified == lastModified &&
+                    cached.length == length
+                ) {
+                    return cached.bitmap
+                }
+
+                val options = sampledOptions(path, maxWidth, maxHeight)
+                val bitmap = BitmapFactory.decodeFile(path, options)
+                    ?.let { scaleToFit(it, maxWidth, maxHeight) }
+                if (bitmap == null) {
+                    bitmapCache.remove(key)
+                } else {
+                    bitmapCache.put(key, CachedBitmap(lastModified, length, bitmap))
+                }
+                bitmap
             }
         } catch (e: Exception) {
-            Log.e(TAG, "loadLargeIcon", e)
+            Log.e(TAG, "loadBitmap", e)
             null
         }
     }
 
-    /// Calcula a subamostragem necessária para o bitmap caber no limite.
-    ///
-    /// Um RemoteViews atravessa o Binder até a interface do sistema, e a
-    /// transação comporta cerca de 1 MB. Uma imagem grande o bastante faz a
-    /// notificação ser aceita e nunca desenhada, sem erro no log — então o
-    /// limite é imposto aqui, e não confiado a quem chama.
-    private fun sampledOptions(path: String): BitmapFactory.Options {
+    /// Calcula a maior subamostragem que ainda deixa o bitmap maior ou igual ao
+    /// tamanho final, para o decode ficar barato sem perder nitidez. O ajuste
+    /// fino até o limite fica com scaleToFit, já que inSampleSize só anda em
+    /// potências de 2.
+    private fun sampledOptions(
+        path: String,
+        maxWidth: Int,
+        maxHeight: Int
+    ): BitmapFactory.Options {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(path, bounds)
 
         var sampleSize = 1
         while (
-            (bounds.outWidth / sampleSize) * (bounds.outHeight / sampleSize) >
-            MAX_BITMAP_PIXELS
+            bounds.outWidth / (sampleSize * 2) >= maxWidth ||
+            bounds.outHeight / (sampleSize * 2) >= maxHeight
         ) {
             sampleSize *= 2
         }
 
         return BitmapFactory.Options().apply { inSampleSize = sampleSize }
+    }
+
+    /// Reduz o bitmap, mantendo a proporção, até caber em maxWidth x maxHeight.
+    private fun scaleToFit(bitmap: Bitmap, maxWidth: Int, maxHeight: Int): Bitmap {
+        val scale = minOf(
+            maxWidth.toFloat() / bitmap.width,
+            maxHeight.toFloat() / bitmap.height
+        )
+        if (scale >= 1f) {
+            return bitmap
+        }
+
+        val width = (bitmap.width * scale).toInt().coerceAtLeast(1)
+        val height = (bitmap.height * scale).toInt().coerceAtLeast(1)
+        val scaled = Bitmap.createScaledBitmap(bitmap, width, height, true)
+        if (scaled !== bitmap) {
+            bitmap.recycle()
+        }
+        return scaled
     }
 
     private fun buildNotificationActions(
@@ -879,3 +940,10 @@ class ForegroundService : Service() {
         return actions
     }
 }
+
+/// Bitmap em cache junto com a versão do arquivo de onde veio.
+private class CachedBitmap(
+    val lastModified: Long,
+    val length: Long,
+    val bitmap: Bitmap
+)
