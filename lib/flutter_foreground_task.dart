@@ -143,7 +143,7 @@ class FlutterForegroundTask {
         notificationUseCustomLayout: notificationUseCustomLayout,
         notificationTrackImagePath: notificationTrackImagePath,
         notificationTextIconName: notificationTextIconName,
-      notificationEmphasisText: notificationEmphasisText,
+        notificationEmphasisText: notificationEmphasisText,
         callback: callback,
       );
 
@@ -209,7 +209,7 @@ class FlutterForegroundTask {
         notificationUseCustomLayout: notificationUseCustomLayout,
         notificationTrackImagePath: notificationTrackImagePath,
         notificationTextIconName: notificationTextIconName,
-      notificationEmphasisText: notificationEmphasisText,
+        notificationEmphasisText: notificationEmphasisText,
         callback: callback,
         notificationSound: notificationSound,
         notificationVibratePattern: notificationVibratePattern,
