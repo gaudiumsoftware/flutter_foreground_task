@@ -16,6 +16,7 @@ import 'models/notification_button.dart';
 import 'models/notification_icon.dart';
 import 'models/notification_options.dart';
 import 'models/notification_permission.dart';
+import 'models/notification_progress.dart';
 import 'models/notification_vibrate_pattern.dart';
 import 'models/service_request_result.dart';
 import 'task_handler.dart';
@@ -34,6 +35,7 @@ export 'models/notification_icon.dart';
 export 'models/notification_options.dart';
 export 'models/notification_permission.dart';
 export 'models/notification_priority.dart';
+export 'models/notification_progress.dart';
 export 'models/notification_vibrate_pattern.dart';
 export 'models/notification_visibility.dart';
 export 'models/service_request_result.dart';
@@ -106,6 +108,13 @@ class FlutterForegroundTask {
     NotificationIcon? notificationIcon,
     List<NotificationButton>? notificationButtons,
     String? notificationInitialRoute,
+    String? notificationLargeIconPath,
+    String? notificationSubText,
+    NotificationProgress? notificationProgress,
+    bool? notificationUseCustomLayout,
+    String? notificationTrackImagePath,
+    String? notificationTextIconName,
+    String? notificationEmphasisText,
     Function? callback,
   }) async {
     try {
@@ -128,6 +137,13 @@ class FlutterForegroundTask {
         notificationIcon: notificationIcon,
         notificationButtons: notificationButtons,
         notificationInitialRoute: notificationInitialRoute,
+        notificationLargeIconPath: notificationLargeIconPath,
+        notificationSubText: notificationSubText,
+        notificationProgress: notificationProgress,
+        notificationUseCustomLayout: notificationUseCustomLayout,
+        notificationTrackImagePath: notificationTrackImagePath,
+        notificationTextIconName: notificationTextIconName,
+        notificationEmphasisText: notificationEmphasisText,
         callback: callback,
       );
 
@@ -164,6 +180,13 @@ class FlutterForegroundTask {
     NotificationIcon? notificationIcon,
     List<NotificationButton>? notificationButtons,
     String? notificationInitialRoute,
+    String? notificationLargeIconPath,
+    String? notificationSubText,
+    NotificationProgress? notificationProgress,
+    bool? notificationUseCustomLayout,
+    String? notificationTrackImagePath,
+    String? notificationTextIconName,
+    String? notificationEmphasisText,
     Function? callback,
     String? notificationSound,
     NotificationVibratePattern? notificationVibratePattern,
@@ -180,6 +203,13 @@ class FlutterForegroundTask {
         notificationIcon: notificationIcon,
         notificationButtons: notificationButtons,
         notificationInitialRoute: notificationInitialRoute,
+        notificationLargeIconPath: notificationLargeIconPath,
+        notificationSubText: notificationSubText,
+        notificationProgress: notificationProgress,
+        notificationUseCustomLayout: notificationUseCustomLayout,
+        notificationTrackImagePath: notificationTrackImagePath,
+        notificationTextIconName: notificationTextIconName,
+        notificationEmphasisText: notificationEmphasisText,
         callback: callback,
         notificationSound: notificationSound,
         notificationVibratePattern: notificationVibratePattern,

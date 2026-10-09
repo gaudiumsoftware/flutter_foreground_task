@@ -12,7 +12,14 @@ data class NotificationContent(
         val buttons: List<NotificationButton>,
         val initialRoute: String?,
         val sound: String?,
-        val vibratePattern: String?
+        val vibratePattern: String?,
+        val largeIconPath: String?,
+        val subText: String?,
+        val useCustomLayout: Boolean,
+        val trackImagePath: String?,
+        val textIconName: String?,
+        val emphasisText: String?,
+        val progress: NotificationProgress?
 ) {
     companion object {
         fun getData(context: Context): NotificationContent {
@@ -44,6 +51,21 @@ data class NotificationContent(
 
             val vibratePattern = prefs.getString(PrefsKey.NOTIFICATION_VIBRATE_PATTERN, null)
 
+            val largeIconPath = prefs.getString(PrefsKey.NOTIFICATION_LARGE_ICON_PATH, null)
+
+            val subText = prefs.getString(PrefsKey.NOTIFICATION_SUB_TEXT, null)
+
+            val useCustomLayout = prefs.getBoolean(PrefsKey.NOTIFICATION_USE_CUSTOM_LAYOUT, false)
+
+            val trackImagePath = prefs.getString(PrefsKey.NOTIFICATION_TRACK_IMAGE_PATH, null)
+
+            val textIconName = prefs.getString(PrefsKey.NOTIFICATION_TEXT_ICON_NAME, null)
+
+            val emphasisText = prefs.getString(PrefsKey.NOTIFICATION_EMPHASIS_TEXT, null)
+
+            val progressJsonString = prefs.getString(PrefsKey.NOTIFICATION_PROGRESS, null)
+            val progress = progressJsonString?.let(NotificationProgress::fromJsonString)
+
             return NotificationContent(
                 title = title,
                 text = text,
@@ -51,7 +73,14 @@ data class NotificationContent(
                 buttons = buttons,
                 initialRoute = initialRoute,
                 sound = sound,
-                vibratePattern = vibratePattern
+                vibratePattern = vibratePattern,
+                largeIconPath = largeIconPath,
+                subText = subText,
+                useCustomLayout = useCustomLayout,
+                trackImagePath = trackImagePath,
+                textIconName = textIconName,
+                emphasisText = emphasisText,
+                progress = progress
             )
         }
 
@@ -80,6 +109,21 @@ data class NotificationContent(
 
             val vibratePattern = map?.get(PrefsKey.NOTIFICATION_VIBRATE_PATTERN) as? String
 
+            val largeIconPath = map?.get(PrefsKey.NOTIFICATION_LARGE_ICON_PATH) as? String
+
+            val subText = map?.get(PrefsKey.NOTIFICATION_SUB_TEXT) as? String
+
+            val useCustomLayout = map?.get(PrefsKey.NOTIFICATION_USE_CUSTOM_LAYOUT) as? Boolean ?: false
+
+            val trackImagePath = map?.get(PrefsKey.NOTIFICATION_TRACK_IMAGE_PATH) as? String
+
+            val textIconName = map?.get(PrefsKey.NOTIFICATION_TEXT_ICON_NAME) as? String
+
+            val emphasisText = map?.get(PrefsKey.NOTIFICATION_EMPHASIS_TEXT) as? String
+
+            val progressJson = map?.get(PrefsKey.NOTIFICATION_PROGRESS) as? Map<*, *>
+            val progressJsonString = progressJson?.let { JSONObject(it).toString() }
+
             with(prefs.edit()) {
                 putString(PrefsKey.NOTIFICATION_CONTENT_TITLE, title)
                 putString(PrefsKey.NOTIFICATION_CONTENT_TEXT, text)
@@ -88,6 +132,13 @@ data class NotificationContent(
                 putString(PrefsKey.NOTIFICATION_INITIAL_ROUTE, initialRoute)
                 putString(PrefsKey.NOTIFICATION_SOUND, sound)
                 putString(PrefsKey.NOTIFICATION_VIBRATE_PATTERN, vibratePattern)
+                putString(PrefsKey.NOTIFICATION_LARGE_ICON_PATH, largeIconPath)
+                putString(PrefsKey.NOTIFICATION_SUB_TEXT, subText)
+                putBoolean(PrefsKey.NOTIFICATION_USE_CUSTOM_LAYOUT, useCustomLayout)
+                putString(PrefsKey.NOTIFICATION_TRACK_IMAGE_PATH, trackImagePath)
+                putString(PrefsKey.NOTIFICATION_TEXT_ICON_NAME, textIconName)
+                putString(PrefsKey.NOTIFICATION_EMPHASIS_TEXT, emphasisText)
+                putString(PrefsKey.NOTIFICATION_PROGRESS, progressJsonString)
                 commit()
             }
         }
@@ -117,6 +168,21 @@ data class NotificationContent(
 
             val vibratePattern = map?.get(PrefsKey.NOTIFICATION_VIBRATE_PATTERN) as? String
 
+            val largeIconPath = map?.get(PrefsKey.NOTIFICATION_LARGE_ICON_PATH) as? String
+
+            val subText = map?.get(PrefsKey.NOTIFICATION_SUB_TEXT) as? String
+
+            val useCustomLayout = map?.get(PrefsKey.NOTIFICATION_USE_CUSTOM_LAYOUT) as? Boolean ?: false
+
+            val trackImagePath = map?.get(PrefsKey.NOTIFICATION_TRACK_IMAGE_PATH) as? String
+
+            val textIconName = map?.get(PrefsKey.NOTIFICATION_TEXT_ICON_NAME) as? String
+
+            val emphasisText = map?.get(PrefsKey.NOTIFICATION_EMPHASIS_TEXT) as? String
+
+            val progressJson = map?.get(PrefsKey.NOTIFICATION_PROGRESS) as? Map<*, *>
+            val progressJsonString = progressJson?.let { JSONObject(it).toString() }
+
             with(prefs.edit()) {
                 title?.let { putString(PrefsKey.NOTIFICATION_CONTENT_TITLE, it) }
                 text?.let { putString(PrefsKey.NOTIFICATION_CONTENT_TEXT, it) }
@@ -125,6 +191,13 @@ data class NotificationContent(
                 initialRoute?.let { putString(PrefsKey.NOTIFICATION_INITIAL_ROUTE, it) }
                 putString(PrefsKey.NOTIFICATION_SOUND, sound)
                 putString(PrefsKey.NOTIFICATION_VIBRATE_PATTERN, vibratePattern)
+                putString(PrefsKey.NOTIFICATION_LARGE_ICON_PATH, largeIconPath)
+                putString(PrefsKey.NOTIFICATION_SUB_TEXT, subText)
+                putBoolean(PrefsKey.NOTIFICATION_USE_CUSTOM_LAYOUT, useCustomLayout)
+                putString(PrefsKey.NOTIFICATION_TRACK_IMAGE_PATH, trackImagePath)
+                putString(PrefsKey.NOTIFICATION_TEXT_ICON_NAME, textIconName)
+                putString(PrefsKey.NOTIFICATION_EMPHASIS_TEXT, emphasisText)
+                putString(PrefsKey.NOTIFICATION_PROGRESS, progressJsonString)
                 commit()
             }
         }
