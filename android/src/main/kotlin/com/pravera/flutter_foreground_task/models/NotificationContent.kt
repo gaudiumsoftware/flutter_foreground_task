@@ -172,7 +172,7 @@ data class NotificationContent(
 
             val subText = map?.get(PrefsKey.NOTIFICATION_SUB_TEXT) as? String
 
-            val useCustomLayout = map?.get(PrefsKey.NOTIFICATION_USE_CUSTOM_LAYOUT) as? Boolean ?: false
+            val useCustomLayout = map?.get(PrefsKey.NOTIFICATION_USE_CUSTOM_LAYOUT) as? Boolean
 
             val trackImagePath = map?.get(PrefsKey.NOTIFICATION_TRACK_IMAGE_PATH) as? String
 
@@ -189,15 +189,29 @@ data class NotificationContent(
                 iconJsonString?.let { putString(PrefsKey.NOTIFICATION_CONTENT_ICON, it) }
                 buttonsJsonString?.let { putString(PrefsKey.NOTIFICATION_CONTENT_BUTTONS, it) }
                 initialRoute?.let { putString(PrefsKey.NOTIFICATION_INITIAL_ROUTE, it) }
-                putString(PrefsKey.NOTIFICATION_SOUND, sound)
-                putString(PrefsKey.NOTIFICATION_VIBRATE_PATTERN, vibratePattern)
-                putString(PrefsKey.NOTIFICATION_LARGE_ICON_PATH, largeIconPath)
-                putString(PrefsKey.NOTIFICATION_SUB_TEXT, subText)
-                putBoolean(PrefsKey.NOTIFICATION_USE_CUSTOM_LAYOUT, useCustomLayout)
-                putString(PrefsKey.NOTIFICATION_TRACK_IMAGE_PATH, trackImagePath)
-                putString(PrefsKey.NOTIFICATION_TEXT_ICON_NAME, textIconName)
-                putString(PrefsKey.NOTIFICATION_EMPHASIS_TEXT, emphasisText)
-                putString(PrefsKey.NOTIFICATION_PROGRESS, progressJsonString)
+                sound?.let { putString(PrefsKey.NOTIFICATION_SOUND, it) }
+                vibratePattern?.let {
+                    putString(PrefsKey.NOTIFICATION_VIBRATE_PATTERN, it)
+                }
+                largeIconPath?.let {
+                    putString(PrefsKey.NOTIFICATION_LARGE_ICON_PATH, it)
+                }
+                subText?.let { putString(PrefsKey.NOTIFICATION_SUB_TEXT, it) }
+                useCustomLayout?.let {
+                    putBoolean(PrefsKey.NOTIFICATION_USE_CUSTOM_LAYOUT, it)
+                }
+                trackImagePath?.let {
+                    putString(PrefsKey.NOTIFICATION_TRACK_IMAGE_PATH, it)
+                }
+                textIconName?.let {
+                    putString(PrefsKey.NOTIFICATION_TEXT_ICON_NAME, it)
+                }
+                emphasisText?.let {
+                    putString(PrefsKey.NOTIFICATION_EMPHASIS_TEXT, it)
+                }
+                progressJsonString?.let {
+                    putString(PrefsKey.NOTIFICATION_PROGRESS, it)
+                }
                 commit()
             }
         }
