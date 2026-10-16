@@ -14,6 +14,7 @@ import 'models/notification_button.dart';
 import 'models/notification_icon.dart';
 import 'models/notification_options.dart';
 import 'models/notification_permission.dart';
+import 'models/notification_progress.dart';
 import 'models/notification_vibrate_pattern.dart';
 import 'models/service_options.dart';
 import 'task_handler.dart';
@@ -45,6 +46,13 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
     NotificationIcon? notificationIcon,
     List<NotificationButton>? notificationButtons,
     String? notificationInitialRoute,
+    String? notificationLargeIconPath,
+    String? notificationSubText,
+    NotificationProgress? notificationProgress,
+    bool? notificationUseCustomLayout,
+    String? notificationTrackImagePath,
+    String? notificationTextIconName,
+    String? notificationEmphasisText,
     Function? callback,
   }) async {
     final Map<String, dynamic> optionsJson = ServiceStartOptions(
@@ -58,6 +66,13 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
       notificationIcon: notificationIcon,
       notificationButtons: notificationButtons,
       notificationInitialRoute: notificationInitialRoute,
+      notificationLargeIconPath: notificationLargeIconPath,
+      notificationSubText: notificationSubText,
+      notificationProgress: notificationProgress,
+      notificationUseCustomLayout: notificationUseCustomLayout,
+      notificationTrackImagePath: notificationTrackImagePath,
+      notificationTextIconName: notificationTextIconName,
+      notificationEmphasisText: notificationEmphasisText,
       callback: callback,
     ).toJson(platform);
 
@@ -77,6 +92,13 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
     NotificationIcon? notificationIcon,
     List<NotificationButton>? notificationButtons,
     String? notificationInitialRoute,
+    String? notificationLargeIconPath,
+    String? notificationSubText,
+    NotificationProgress? notificationProgress,
+    bool? notificationUseCustomLayout,
+    String? notificationTrackImagePath,
+    String? notificationTextIconName,
+    String? notificationEmphasisText,
     Function? callback,
     String? notificationSound,
     NotificationVibratePattern? notificationVibratePattern,
@@ -88,6 +110,13 @@ class MethodChannelFlutterForegroundTask extends FlutterForegroundTaskPlatform {
       notificationIcon: notificationIcon,
       notificationButtons: notificationButtons,
       notificationInitialRoute: notificationInitialRoute,
+      notificationLargeIconPath: notificationLargeIconPath,
+      notificationSubText: notificationSubText,
+      notificationProgress: notificationProgress,
+      notificationUseCustomLayout: notificationUseCustomLayout,
+      notificationTrackImagePath: notificationTrackImagePath,
+      notificationTextIconName: notificationTextIconName,
+      notificationEmphasisText: notificationEmphasisText,
       notificationSound: notificationSound,
       notificationVibratePattern: notificationVibratePattern,
       callback: callback,

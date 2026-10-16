@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.app.*
 import android.content.*
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.media.RingtoneManager
 import android.net.Uri
@@ -13,10 +15,15 @@ import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
 import android.util.Log
+import android.util.LruCache
+import android.util.TypedValue
+import android.view.View
+import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.pravera.flutter_foreground_task.FlutterForegroundTaskLifecycleListener
+import com.pravera.flutter_foreground_task.R
 import com.pravera.flutter_foreground_task.RequestCode
 import com.pravera.flutter_foreground_task.models.*
 import com.pravera.flutter_foreground_task.utils.ForegroundServiceUtils
@@ -24,6 +31,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.intArrayOf
+import java.io.File
 import java.util.concurrent.Executors
 
 /**
@@ -35,6 +43,15 @@ import java.util.concurrent.Executors
 class ForegroundService : Service() {
     companion object {
         private val TAG = ForegroundService::class.java.simpleName
+
+        /// Limites, em pixels, de cada bitmap embarcado na notificação.
+        private const val PHOTO_MAX_SIZE = 256
+        private const val TRACK_MAX_WIDTH = 1080
+        private const val TRACK_MAX_HEIGHT = 128
+
+        /// Folga para a foto e a trilha no limite, com espaço para a troca de
+        /// versão de um arquivo.
+        private const val BITMAP_CACHE_BYTES = 2 * 1024 * 1024
 
         private const val ACTION_NOTIFICATION_PRESSED = "onNotificationPressed"
         private const val ACTION_NOTIFICATION_DISMISSED = "onNotificationDismissed"
@@ -99,6 +116,13 @@ class ForegroundService : Service() {
 
     // Executor para tocar sons em thread separada
     private val soundExecutor = Executors.newSingleThreadExecutor()
+
+    // Bitmaps já decodificados, por arquivo e limite.
+    private val bitmapCache = object : LruCache<String, CachedBitmap>(BITMAP_CACHE_BYTES) {
+        override fun sizeOf(key: String, value: CachedBitmap): Int {
+            return value.bitmap.byteCount
+        }
+    }
 
     // A broadcast receiver that handles intents that occur in the foreground service.
     private var broadcastReceiver = object : BroadcastReceiver() {
@@ -195,6 +219,7 @@ class ForegroundService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         soundExecutor.shutdown()
+        bitmapCache.evictAll()
         val isTimeout = this.isTimeout
         destroyForegroundTask(isTimeout)
         stopForegroundService(false)
@@ -386,6 +411,26 @@ class ForegroundService : Service() {
             builder.style = Notification.BigTextStyle()
             builder.setVisibility(notificationOptions.visibility)
             builder.setOnlyAlertOnce(notificationOptions.onlyAlertOnce)
+            notificationContent.subText?.let { builder.setSubText(it) }
+            // Com o corpo customizado a foto é desenhada por ele. Definir o
+            // ícone grande aqui também duplicaria a imagem e faria o sistema
+            // reservar a largura dele, espremendo o título.
+            if (!notificationContent.useCustomLayout) {
+                loadPhoto(notificationContent.largeIconPath)?.let {
+                    builder.setLargeIcon(it)
+                }
+            }
+            notificationContent.progress?.let {
+                builder.setProgress(it.max, it.current, it.indeterminate)
+            }
+            if (notificationContent.useCustomLayout) {
+                // Só a expandida é customizada. A recolhida tem altura fixa e
+                // menor do que o corpo customizado, o que cortava a segunda
+                // linha no meio; deixá-la com o template padrão resolve e é o
+                // que o protótipo desenha de qualquer forma.
+                builder.style = Notification.DecoratedCustomViewStyle()
+                builder.setCustomBigContentView(buildCustomView(notificationContent))
+            }
             if (iconBackgroundColor != null) {
                 builder.setColor(iconBackgroundColor)
             }
@@ -413,6 +458,22 @@ class ForegroundService : Service() {
             builder.setStyle(NotificationCompat.BigTextStyle().bigText(notificationContent.text))
             builder.setVisibility(notificationOptions.visibility)
             builder.setOnlyAlertOnce(notificationOptions.onlyAlertOnce)
+            notificationContent.subText?.let { builder.setSubText(it) }
+            // Com o corpo customizado a foto é desenhada por ele. Definir o
+            // ícone grande aqui também duplicaria a imagem e faria o sistema
+            // reservar a largura dele, espremendo o título.
+            if (!notificationContent.useCustomLayout) {
+                loadPhoto(notificationContent.largeIconPath)?.let {
+                    builder.setLargeIcon(it)
+                }
+            }
+            notificationContent.progress?.let {
+                builder.setProgress(it.max, it.current, it.indeterminate)
+            }
+            if (notificationContent.useCustomLayout) {
+                builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
+                builder.setCustomBigContentView(buildCustomView(notificationContent))
+            }
             if (iconBackgroundColor != null) {
                 builder.color = iconBackgroundColor
             }
@@ -664,6 +725,167 @@ class ForegroundService : Service() {
         }
     }
 
+    /// Monta o corpo customizado da notificação expandida.
+    ///
+    /// Só o corpo: o cabeçalho continua sendo do sistema, via
+    /// DecoratedCustomViewStyle. A trilha chega pronta como imagem porque o
+    /// RemoteViews não permite posicionar um ícone sobre uma barra.
+    private fun buildCustomView(
+        notificationContent: NotificationContent
+    ): RemoteViews {
+        val views = RemoteViews(packageName, R.layout.fft_notification_expanded)
+
+        views.setTextViewText(R.id.fft_notification_title, notificationContent.title)
+
+        val emphasis = notificationContent.emphasisText
+        if (emphasis.isNullOrBlank()) {
+            views.setViewVisibility(R.id.fft_notification_emphasis, View.GONE)
+            views.setTextViewTextSize(
+                R.id.fft_notification_title, TypedValue.COMPLEX_UNIT_SP, 22f
+            )
+        } else {
+            views.setTextViewText(R.id.fft_notification_emphasis, emphasis)
+            views.setViewVisibility(R.id.fft_notification_emphasis, View.VISIBLE)
+            views.setTextViewTextSize(
+                R.id.fft_notification_title, TypedValue.COMPLEX_UNIT_SP, 16f
+            )
+        }
+
+        if (notificationContent.text.isBlank()) {
+            views.setViewVisibility(R.id.fft_notification_text, View.GONE)
+        } else {
+            views.setTextViewText(R.id.fft_notification_text, notificationContent.text)
+            views.setViewVisibility(R.id.fft_notification_text, View.VISIBLE)
+        }
+
+        val textIconResId = resolveDrawableResId(notificationContent.textIconName)
+        if (textIconResId == 0) {
+            views.setViewVisibility(R.id.fft_notification_text_icon, View.GONE)
+        } else {
+            views.setImageViewResource(R.id.fft_notification_text_icon, textIconResId)
+            views.setViewVisibility(R.id.fft_notification_text_icon, View.VISIBLE)
+        }
+
+        val photo = loadPhoto(notificationContent.largeIconPath)
+        if (photo == null) {
+            views.setViewVisibility(R.id.fft_notification_photo, View.GONE)
+        } else {
+            views.setImageViewBitmap(R.id.fft_notification_photo, photo)
+            views.setViewVisibility(R.id.fft_notification_photo, View.VISIBLE)
+        }
+
+        val track = loadBitmap(
+            notificationContent.trackImagePath, TRACK_MAX_WIDTH, TRACK_MAX_HEIGHT
+        )
+        if (track == null) {
+            views.setViewVisibility(R.id.fft_notification_track, View.GONE)
+        } else {
+            views.setImageViewBitmap(R.id.fft_notification_track, track)
+            views.setViewVisibility(R.id.fft_notification_track, View.VISIBLE)
+        }
+
+        return views
+    }
+
+    /// Resolve um drawable do app pelo nome. Retorna 0 quando não existe, que é
+    /// o valor que o Android usa para "nenhum resource".
+    private fun resolveDrawableResId(name: String?): Int {
+        if (name.isNullOrBlank()) {
+            return 0
+        }
+
+        return resources.getIdentifier(name, "drawable", packageName)
+    }
+
+    /// Carrega a foto, usada tanto como ícone grande quanto no corpo customizado.
+    private fun loadPhoto(path: String?): Bitmap? {
+        return loadBitmap(path, PHOTO_MAX_SIZE, PHOTO_MAX_SIZE)
+    }
+
+    /// Carrega uma imagem do disco reduzida para caber em maxWidth x maxHeight.
+    ///
+    /// O arquivo é gravado pelo app, não pelo plugin. Uma falha de leitura não
+    /// pode derrubar a notificação: sem imagem, a notificação é exibida sem o
+    /// ícone grande.
+    private fun loadBitmap(path: String?, maxWidth: Int, maxHeight: Int): Bitmap? {
+        if (path.isNullOrBlank()) {
+            return null
+        }
+
+        return try {
+            val file = File(path)
+            if (!file.exists()) {
+                null
+            } else {
+                val key = "$path|$maxWidth|$maxHeight"
+                val lastModified = file.lastModified()
+                val length = file.length()
+                val cached = bitmapCache.get(key)
+                if (cached != null &&
+                    cached.lastModified == lastModified &&
+                    cached.length == length
+                ) {
+                    return cached.bitmap
+                }
+
+                val options = sampledOptions(path, maxWidth, maxHeight)
+                val bitmap = BitmapFactory.decodeFile(path, options)
+                    ?.let { scaleToFit(it, maxWidth, maxHeight) }
+                if (bitmap == null) {
+                    bitmapCache.remove(key)
+                } else {
+                    bitmapCache.put(key, CachedBitmap(lastModified, length, bitmap))
+                }
+                bitmap
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "loadBitmap", e)
+            null
+        }
+    }
+
+    /// Calcula a maior subamostragem que ainda deixa o bitmap maior ou igual ao
+    /// tamanho final, para o decode ficar barato sem perder nitidez. O ajuste
+    /// fino até o limite fica com scaleToFit, já que inSampleSize só anda em
+    /// potências de 2.
+    private fun sampledOptions(
+        path: String,
+        maxWidth: Int,
+        maxHeight: Int
+    ): BitmapFactory.Options {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(path, bounds)
+
+        var sampleSize = 1
+        while (
+            bounds.outWidth / (sampleSize * 2) >= maxWidth ||
+            bounds.outHeight / (sampleSize * 2) >= maxHeight
+        ) {
+            sampleSize *= 2
+        }
+
+        return BitmapFactory.Options().apply { inSampleSize = sampleSize }
+    }
+
+    /// Reduz o bitmap, mantendo a proporção, até caber em maxWidth x maxHeight.
+    private fun scaleToFit(bitmap: Bitmap, maxWidth: Int, maxHeight: Int): Bitmap {
+        val scale = minOf(
+            maxWidth.toFloat() / bitmap.width,
+            maxHeight.toFloat() / bitmap.height
+        )
+        if (scale >= 1f) {
+            return bitmap
+        }
+
+        val width = (bitmap.width * scale).toInt().coerceAtLeast(1)
+        val height = (bitmap.height * scale).toInt().coerceAtLeast(1)
+        val scaled = Bitmap.createScaledBitmap(bitmap, width, height, true)
+        if (scaled !== bitmap) {
+            bitmap.recycle()
+        }
+        return scaled
+    }
+
     private fun buildNotificationActions(
         buttons: List<NotificationButton>,
         needsRebuild: Boolean = false
@@ -718,3 +940,10 @@ class ForegroundService : Service() {
         return actions
     }
 }
+
+/// Bitmap em cache junto com a versão do arquivo de onde veio.
+private class CachedBitmap(
+    val lastModified: Long,
+    val length: Long,
+    val bitmap: Bitmap
+)

@@ -7,6 +7,7 @@ import 'models/notification_button.dart';
 import 'models/notification_icon.dart';
 import 'models/notification_options.dart';
 import 'models/notification_permission.dart';
+import 'models/notification_progress.dart';
 import 'models/notification_vibrate_pattern.dart';
 import 'task_handler.dart';
 
@@ -45,6 +46,13 @@ abstract class FlutterForegroundTaskPlatform extends PlatformInterface {
     NotificationIcon? notificationIcon,
     List<NotificationButton>? notificationButtons,
     String? notificationInitialRoute,
+    String? notificationLargeIconPath,
+    String? notificationSubText,
+    NotificationProgress? notificationProgress,
+    bool? notificationUseCustomLayout,
+    String? notificationTrackImagePath,
+    String? notificationTextIconName,
+    String? notificationEmphasisText,
     Function? callback,
   }) {
     throw UnimplementedError('startService() has not been implemented.');
@@ -61,6 +69,13 @@ abstract class FlutterForegroundTaskPlatform extends PlatformInterface {
     NotificationIcon? notificationIcon,
     List<NotificationButton>? notificationButtons,
     String? notificationInitialRoute,
+    String? notificationLargeIconPath,
+    String? notificationSubText,
+    NotificationProgress? notificationProgress,
+    bool? notificationUseCustomLayout,
+    String? notificationTrackImagePath,
+    String? notificationTextIconName,
+    String? notificationEmphasisText,
     Function? callback,
     String? notificationSound,
     NotificationVibratePattern? notificationVibratePattern,
