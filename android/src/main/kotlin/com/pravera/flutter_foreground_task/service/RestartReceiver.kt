@@ -39,8 +39,7 @@ class RestartReceiver : BroadcastReceiver() {
 			val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
 				PluginUtils.canScheduleExactAlarms(context)) {
-				val info = AlarmManager.AlarmClockInfo(triggerTime, operation)
-				alarmManager.setAlarmClock(info, operation)
+				alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, operation)
 			} else {
 				alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, operation)
 			}
