@@ -189,9 +189,16 @@ data class NotificationContent(
                 iconJsonString?.let { putString(PrefsKey.NOTIFICATION_CONTENT_ICON, it) }
                 buttonsJsonString?.let { putString(PrefsKey.NOTIFICATION_CONTENT_BUTTONS, it) }
                 initialRoute?.let { putString(PrefsKey.NOTIFICATION_INITIAL_ROUTE, it) }
-                sound?.let { putString(PrefsKey.NOTIFICATION_SOUND, it) }
-                vibratePattern?.let {
-                    putString(PrefsKey.NOTIFICATION_VIBRATE_PATTERN, it)
+                // Som e vibração valem só para este update, como no iOS.
+                if (sound != null) {
+                    putString(PrefsKey.NOTIFICATION_SOUND, sound)
+                } else {
+                    remove(PrefsKey.NOTIFICATION_SOUND)
+                }
+                if (vibratePattern != null) {
+                    putString(PrefsKey.NOTIFICATION_VIBRATE_PATTERN, vibratePattern)
+                } else {
+                    remove(PrefsKey.NOTIFICATION_VIBRATE_PATTERN)
                 }
                 largeIconPath?.let {
                     putString(PrefsKey.NOTIFICATION_LARGE_ICON_PATH, it)
