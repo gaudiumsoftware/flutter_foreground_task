@@ -3,6 +3,7 @@ package com.pravera.flutter_foreground_task.service
 import android.app.ActivityManager
 import android.app.ApplicationExitInfo
 import android.content.Context
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
@@ -63,6 +64,7 @@ class CustomLayoutGuard(context: Context) {
     )
     private val handler = Handler(Looper.getMainLooper())
     private var isConfirmScheduled = false
+    private val confirmRunnable = Runnable { confirm() }
 
     // Atualizar o app ou reiniciar o aparelho encerra o processo, então os valores são fixos
     // durante a vida dele.
@@ -93,11 +95,7 @@ class CustomLayoutGuard(context: Context) {
                     putLong(PrefsKey.CUSTOM_LAYOUT_BLOCKED_INSTALL, installTime)
                     putLong(PrefsKey.CUSTOM_LAYOUT_BLOCKED_BOOT, bootId)
                 }
-                remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PROCESS)
-                remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PID)
-                remove(PrefsKey.CUSTOM_LAYOUT_PENDING_AT)
-                remove(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL)
-                remove(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT)
+                removePending(this)
                 commit()
             }
         }
@@ -110,13 +108,15 @@ class CustomLayoutGuard(context: Context) {
 
     /**
      * Marca o post com o layout customizado como pendente, quando a instalação e o boot atuais
-     * ainda não foram confirmados. Chamar antes de entregar a notificação ao sistema.
+     * ainda não foram confirmados. Chamar logo antes de entregar a notificação ao sistema.
+     *
+     * @return true quando esta chamada gravou a marca; só nesse caso [cancelPending] a desfaz.
      */
-    fun markPending() {
+    fun markPending(): Boolean {
         // Sem a hora da instalação não há como confirmar nem bloquear; o motivo já foi registrado
         // no log ao lê-la.
         if (isConfirmScheduled || installTime == 0L) {
-            return
+            return false
         }
 
         if (isCurrentSession(
@@ -124,7 +124,7 @@ class CustomLayoutGuard(context: Context) {
                 PrefsKey.CUSTOM_LAYOUT_CONFIRMED_BOOT
             )
         ) {
-            return
+            return false
         }
 
         // commit() e não apply(): a marca precisa estar no disco antes de o processo morrer.
@@ -138,22 +138,42 @@ class CustomLayoutGuard(context: Context) {
         }
 
         isConfirmScheduled = true
-        handler.postDelayed({ confirm() }, CONFIRM_DELAY_MILLIS)
+        handler.postDelayed(confirmRunnable, CONFIRM_DELAY_MILLIS)
+        return true
+    }
+
+    /**
+     * Desfaz a marca quando a notificação não chegou ao sistema. Sem isso, a confirmação
+     * registraria como seguro um layout que o sistema nunca desenhou.
+     */
+    fun cancelPending() {
+        handler.removeCallbacks(confirmRunnable)
+        isConfirmScheduled = false
+
+        with(prefs.edit()) {
+            removePending(this)
+            commit()
+        }
     }
 
     private fun confirm() {
         isConfirmScheduled = false
 
         with(prefs.edit()) {
-            remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PROCESS)
-            remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PID)
-            remove(PrefsKey.CUSTOM_LAYOUT_PENDING_AT)
-            remove(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL)
-            remove(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT)
+            removePending(this)
             putLong(PrefsKey.CUSTOM_LAYOUT_CONFIRMED_INSTALL, installTime)
             putLong(PrefsKey.CUSTOM_LAYOUT_CONFIRMED_BOOT, bootId)
             apply()
         }
+    }
+
+    /** @param editor edição em que as chaves da marca pendente são removidas. */
+    private fun removePending(editor: SharedPreferences.Editor) {
+        editor.remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PROCESS)
+        editor.remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PID)
+        editor.remove(PrefsKey.CUSTOM_LAYOUT_PENDING_AT)
+        editor.remove(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL)
+        editor.remove(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT)
     }
 
     /**
