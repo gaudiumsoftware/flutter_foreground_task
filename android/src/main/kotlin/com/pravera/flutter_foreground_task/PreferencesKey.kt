@@ -71,4 +71,12 @@ object PreferencesKey {
     const val RESTART_BUDGET_PREFS = prefix + "RESTART_BUDGET"
     const val RESTART_ATTEMPT_COUNT = "restartAttemptCount"
     const val RESTART_WINDOW_START = "restartWindowStart"
+
+    // chaves da guarda do layout customizado da notificação
+    const val CUSTOM_LAYOUT_GUARD_PREFS = prefix + "CUSTOM_LAYOUT_GUARD"
+    const val CUSTOM_LAYOUT_PENDING_PID = "customLayoutPendingPid"
+    const val CUSTOM_LAYOUT_PENDING_INSTALL = "customLayoutPendingInstall"
+    const val CUSTOM_LAYOUT_PENDING_BOOT = "customLayoutPendingBoot"
+    const val CUSTOM_LAYOUT_BLOCKED_INSTALL = "customLayoutBlockedInstall"
+    const val CUSTOM_LAYOUT_BLOCKED_BOOT = "customLayoutBlockedBoot"
 }

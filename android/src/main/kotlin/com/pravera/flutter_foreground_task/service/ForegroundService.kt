@@ -125,6 +125,8 @@ class ForegroundService : Service() {
         }
     }
 
+    private val customLayoutGuard by lazy { CustomLayoutGuard(this) }
+
     // A broadcast receiver that handles intents that occur in the foreground service.
     private var broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -439,6 +441,11 @@ class ForegroundService : Service() {
             needsRebuildButtons = true
         }
 
+        val useCustomLayout = notificationContent.useCustomLayout && !customLayoutGuard.isBlocked()
+        if (useCustomLayout) {
+            customLayoutGuard.markPending()
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val builder = Notification.Builder(this, notificationOptions.channelId)
             builder.setOngoing(true)
@@ -454,7 +461,7 @@ class ForegroundService : Service() {
             // Com o corpo customizado a foto é desenhada por ele. Definir o
             // ícone grande aqui também duplicaria a imagem e faria o sistema
             // reservar a largura dele, espremendo o título.
-            if (!notificationContent.useCustomLayout) {
+            if (!useCustomLayout) {
                 loadPhoto(notificationContent.largeIconPath)?.let {
                     builder.setLargeIcon(it)
                 }
@@ -462,7 +469,7 @@ class ForegroundService : Service() {
             notificationContent.progress?.let {
                 builder.setProgress(it.max, it.current, it.indeterminate)
             }
-            if (notificationContent.useCustomLayout) {
+            if (useCustomLayout) {
                 // Só a expandida é customizada. A recolhida tem altura fixa e
                 // menor do que o corpo customizado, o que cortava a segunda
                 // linha no meio; deixá-la com o template padrão resolve e é o
@@ -501,7 +508,7 @@ class ForegroundService : Service() {
             // Com o corpo customizado a foto é desenhada por ele. Definir o
             // ícone grande aqui também duplicaria a imagem e faria o sistema
             // reservar a largura dele, espremendo o título.
-            if (!notificationContent.useCustomLayout) {
+            if (!useCustomLayout) {
                 loadPhoto(notificationContent.largeIconPath)?.let {
                     builder.setLargeIcon(it)
                 }
@@ -509,7 +516,7 @@ class ForegroundService : Service() {
             notificationContent.progress?.let {
                 builder.setProgress(it.max, it.current, it.indeterminate)
             }
-            if (notificationContent.useCustomLayout) {
+            if (useCustomLayout) {
                 builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 builder.setCustomBigContentView(buildCustomView(notificationContent))
             }
