@@ -1,10 +1,13 @@
 package com.pravera.flutter_foreground_task.service
 
+import android.app.ActivityManager
+import android.app.ApplicationExitInfo
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.Process
 import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
@@ -28,8 +31,10 @@ import com.pravera.flutter_foreground_task.PreferencesKey as PrefsKey
  * por outro processo, na mesma instalação e no mesmo boot, significa que o post derrubou o app:
  * o layout customizado fica desligado até o aparelho reiniciar ou o app ser reinstalado.
  *
- * Um processo encerrado por outro motivo dentro da janela do primeiro post também desliga o
- * layout; o custo é exibir o template padrão até o próximo boot.
+ * A partir do Android 11 a marca só desliga o layout quando o sistema registra que o processo
+ * morreu por crash: fechar o app em Recentes ou ser encerrado por falta de memória não conta.
+ * Antes disso não há esse registro, e qualquer morte dentro da janela do primeiro post desliga o
+ * layout até o próximo boot.
  */
 class CustomLayoutGuard(context: Context) {
     companion object {
@@ -76,6 +81,9 @@ class CustomLayoutGuard(context: Context) {
             val crashedOnPost = isCurrentSession(
                 PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL,
                 PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT
+            ) && diedFromCrash(
+                prefs.getInt(PrefsKey.CUSTOM_LAYOUT_PENDING_PID, 0),
+                prefs.getLong(PrefsKey.CUSTOM_LAYOUT_PENDING_AT, 0L)
             )
             with(prefs.edit()) {
                 if (crashedOnPost) {
@@ -86,6 +94,8 @@ class CustomLayoutGuard(context: Context) {
                     putLong(PrefsKey.CUSTOM_LAYOUT_BLOCKED_BOOT, bootId)
                 }
                 remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PROCESS)
+                remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PID)
+                remove(PrefsKey.CUSTOM_LAYOUT_PENDING_AT)
                 remove(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL)
                 remove(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT)
                 commit()
@@ -118,6 +128,8 @@ class CustomLayoutGuard(context: Context) {
         // commit() e não apply(): a marca precisa estar no disco antes de o processo morrer.
         with(prefs.edit()) {
             putString(PrefsKey.CUSTOM_LAYOUT_PENDING_PROCESS, PROCESS_ID)
+            putInt(PrefsKey.CUSTOM_LAYOUT_PENDING_PID, Process.myPid())
+            putLong(PrefsKey.CUSTOM_LAYOUT_PENDING_AT, System.currentTimeMillis())
             putLong(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL, installTime)
             putLong(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT, bootId)
             commit()
@@ -132,6 +144,8 @@ class CustomLayoutGuard(context: Context) {
 
         with(prefs.edit()) {
             remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PROCESS)
+            remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PID)
+            remove(PrefsKey.CUSTOM_LAYOUT_PENDING_AT)
             remove(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL)
             remove(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT)
             putLong(PrefsKey.CUSTOM_LAYOUT_CONFIRMED_INSTALL, installTime)
@@ -155,6 +169,37 @@ class CustomLayoutGuard(context: Context) {
         }
 
         return install != 0L && install == installTime && isSameBoot
+    }
+
+    /**
+     * Consulta o motivo da morte do processo que deixou a marca. Sem registro do sistema
+     * (Android 10 ou anterior, ou registro já descartado), assume crash: deixar o layout ligado
+     * repetiria o crash a cada corrida.
+     *
+     * @param pid PID do processo que deixou a marca.
+     * @param markedAt hora em que a marca foi gravada, em ms.
+     * @return false quando o sistema registra que o processo morreu por outro motivo.
+     */
+    private fun diedFromCrash(pid: Int, markedAt: Long): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || pid == 0) {
+            return true
+        }
+
+        val exitInfo = try {
+            appContext.getSystemService(ActivityManager::class.java)
+                ?.getHistoricalProcessExitReasons(appContext.packageName, pid, 1)
+                ?.firstOrNull()
+        } catch (e: Exception) {
+            Log.e(TAG, e.message, e)
+            null
+        }
+
+        // Registro anterior à marca é de outro processo que teve o mesmo PID.
+        if (exitInfo == null || exitInfo.timestamp < markedAt) {
+            return true
+        }
+
+        return exitInfo.reason == ApplicationExitInfo.REASON_CRASH
     }
 
     /**

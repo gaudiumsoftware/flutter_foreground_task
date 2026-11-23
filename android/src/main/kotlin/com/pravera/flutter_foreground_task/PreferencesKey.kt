@@ -75,6 +75,8 @@ object PreferencesKey {
     // chaves da guarda do layout customizado da notificação
     const val CUSTOM_LAYOUT_GUARD_PREFS = prefix + "CUSTOM_LAYOUT_GUARD"
     const val CUSTOM_LAYOUT_PENDING_PROCESS = "customLayoutPendingProcess"
+    const val CUSTOM_LAYOUT_PENDING_PID = "customLayoutPendingPid"
+    const val CUSTOM_LAYOUT_PENDING_AT = "customLayoutPendingAt"
     const val CUSTOM_LAYOUT_PENDING_INSTALL = "customLayoutPendingInstall"
     const val CUSTOM_LAYOUT_PENDING_BOOT = "customLayoutPendingBoot"
     const val CUSTOM_LAYOUT_BLOCKED_INSTALL = "customLayoutBlockedInstall"
