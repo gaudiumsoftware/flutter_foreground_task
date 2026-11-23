@@ -20,11 +20,15 @@ import com.pravera.flutter_foreground_task.PreferencesKey as PrefsKey
  * o processo com RemoteServiceException. Esse crash é entregue pelo sistema na thread principal
  * e não pode ser capturado.
  *
- * Cada post com o layout customizado fica marcado como pendente até o processo sobreviver a
- * ele por [CONFIRM_DELAY_MILLIS]. Uma marca deixada por outro processo, na mesma instalação e no
- * mesmo boot, significa que o post derrubou o app: o layout customizado fica desligado até o
- * aparelho reiniciar ou o app ser reinstalado. Um processo encerrado por outro motivo dentro
- * dessa janela também desliga o layout; o custo é exibir o template padrão até o próximo boot.
+ * A tabela usada pelo sistema só muda com reboot ou atualização do app. Por isso basta
+ * verificar o primeiro post com o layout customizado de cada instalação e boot: ele fica marcado
+ * como pendente até o processo sobreviver a ele por [CONFIRM_DELAY_MILLIS], e a partir daí a
+ * combinação fica confirmada e os posts seguintes não são marcados. Uma marca pendente deixada
+ * por outro processo, na mesma instalação e no mesmo boot, significa que o post derrubou o app:
+ * o layout customizado fica desligado até o aparelho reiniciar ou o app ser reinstalado.
+ *
+ * Um processo encerrado por outro motivo dentro da janela do primeiro post também desliga o
+ * layout; o custo é exibir o template padrão até o próximo boot.
  */
 class CustomLayoutGuard(context: Context) {
     companion object {
@@ -42,7 +46,11 @@ class CustomLayoutGuard(context: Context) {
         PrefsKey.CUSTOM_LAYOUT_GUARD_PREFS, Context.MODE_PRIVATE
     )
     private val handler = Handler(Looper.getMainLooper())
-    private val confirmRunnable = Runnable { clearPending() }
+    private var isConfirmScheduled = false
+
+    // Atualizar o app encerra o processo, então os dois valores são fixos durante a vida dele.
+    private val installTime by lazy { readInstallTime() }
+    private val bootTime by lazy { readBootTime() }
 
     /**
      * Indica se o layout customizado está desligado na instalação e no boot atuais.
@@ -50,84 +58,87 @@ class CustomLayoutGuard(context: Context) {
      * @return true quando a notificação deve usar o template padrão.
      */
     fun isBlocked(): Boolean {
-        val installTime = installTime()
-        val bootTime = bootTime()
-
         val pendingPid = prefs.getInt(PrefsKey.CUSTOM_LAYOUT_PENDING_PID, 0)
         if (pendingPid != 0 && pendingPid != Process.myPid()) {
-            val crashedOnPost = isSameSession(
-                prefs.getLong(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL, 0L),
-                prefs.getLong(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT, 0L),
-                installTime,
-                bootTime
+            val crashedOnPost = isCurrentSession(
+                PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL,
+                PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT
             )
-            if (crashedOnPost) {
-                Log.w(TAG, "O processo anterior morreu logo após postar o layout customizado; " +
-                        "a notificação usará o template padrão até o próximo boot ou atualização.")
-                with(prefs.edit()) {
+            with(prefs.edit()) {
+                if (crashedOnPost) {
+                    Log.w(TAG, "O processo anterior morreu logo após postar o layout " +
+                            "customizado; a notificação usará o template padrão até o próximo " +
+                            "boot ou atualização.")
                     putLong(PrefsKey.CUSTOM_LAYOUT_BLOCKED_INSTALL, installTime)
                     putLong(PrefsKey.CUSTOM_LAYOUT_BLOCKED_BOOT, bootTime)
-                    commit()
                 }
-            }
-            clearPending()
-        }
-
-        return isSameSession(
-            prefs.getLong(PrefsKey.CUSTOM_LAYOUT_BLOCKED_INSTALL, 0L),
-            prefs.getLong(PrefsKey.CUSTOM_LAYOUT_BLOCKED_BOOT, 0L),
-            installTime,
-            bootTime
-        )
-    }
-
-    /**
-     * Marca o post com o layout customizado como pendente. Chamar antes de entregar a
-     * notificação ao sistema.
-     */
-    fun markPending() {
-        // commit() e não apply(): a marca precisa estar no disco antes de o processo morrer.
-        // Com a marca deste processo já gravada, basta reagendar a confirmação.
-        if (prefs.getInt(PrefsKey.CUSTOM_LAYOUT_PENDING_PID, 0) != Process.myPid()) {
-            with(prefs.edit()) {
-                putInt(PrefsKey.CUSTOM_LAYOUT_PENDING_PID, Process.myPid())
-                putLong(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL, installTime())
-                putLong(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT, bootTime())
+                remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PID)
+                remove(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL)
+                remove(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT)
                 commit()
             }
         }
 
-        // A confirmação conta a partir do último post: uma atualização seguida não pode limpar
-        // a marca de um post que ainda não teve tempo de falhar.
-        handler.removeCallbacks(confirmRunnable)
-        handler.postDelayed(confirmRunnable, CONFIRM_DELAY_MILLIS)
+        return isCurrentSession(
+            PrefsKey.CUSTOM_LAYOUT_BLOCKED_INSTALL,
+            PrefsKey.CUSTOM_LAYOUT_BLOCKED_BOOT
+        )
     }
 
-    private fun clearPending() {
+    /**
+     * Marca o post com o layout customizado como pendente, quando a instalação e o boot atuais
+     * ainda não foram confirmados. Chamar antes de entregar a notificação ao sistema.
+     */
+    fun markPending() {
+        if (isConfirmScheduled) {
+            return
+        }
+
+        if (isCurrentSession(
+                PrefsKey.CUSTOM_LAYOUT_CONFIRMED_INSTALL,
+                PrefsKey.CUSTOM_LAYOUT_CONFIRMED_BOOT
+            )
+        ) {
+            return
+        }
+
+        // commit() e não apply(): a marca precisa estar no disco antes de o processo morrer.
+        with(prefs.edit()) {
+            putInt(PrefsKey.CUSTOM_LAYOUT_PENDING_PID, Process.myPid())
+            putLong(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL, installTime)
+            putLong(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT, bootTime)
+            commit()
+        }
+
+        isConfirmScheduled = true
+        handler.postDelayed({ confirm() }, CONFIRM_DELAY_MILLIS)
+    }
+
+    private fun confirm() {
+        isConfirmScheduled = false
+
         with(prefs.edit()) {
             remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PID)
             remove(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL)
             remove(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT)
+            putLong(PrefsKey.CUSTOM_LAYOUT_CONFIRMED_INSTALL, installTime)
+            putLong(PrefsKey.CUSTOM_LAYOUT_CONFIRMED_BOOT, bootTime)
             apply()
         }
     }
 
     /**
-     * @param install hora da instalação gravada.
-     * @param boot hora do boot gravada.
-     * @param currentInstall hora da instalação atual.
-     * @param currentBoot hora do boot atual.
-     * @return true quando os valores gravados são da instalação e do boot atuais.
+     * @param installKey chave da hora da instalação gravada.
+     * @param bootKey chave da hora do boot gravada.
+     * @return true quando os valores gravados nas chaves são da instalação e do boot atuais.
      */
-    private fun isSameSession(
-        install: Long,
-        boot: Long,
-        currentInstall: Long,
-        currentBoot: Long
-    ): Boolean {
+    private fun isCurrentSession(installKey: String, bootKey: String): Boolean {
+        val install = prefs.getLong(installKey, 0L)
+        val boot = prefs.getLong(bootKey, 0L)
+
         return install != 0L &&
-                install == currentInstall &&
-                abs(boot - currentBoot) < BOOT_TOLERANCE_MILLIS
+                install == installTime &&
+                abs(boot - bootTime) < BOOT_TOLERANCE_MILLIS
     }
 
     /**
@@ -135,7 +146,7 @@ class CustomLayoutGuard(context: Context) {
      *
      * @return hora da última instalação do app, em ms.
      */
-    private fun installTime(): Long {
+    private fun readInstallTime(): Long {
         return try {
             val pm = appContext.packageManager
             val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -152,7 +163,7 @@ class CustomLayoutGuard(context: Context) {
     }
 
     /** @return hora do último boot do aparelho, em ms. */
-    private fun bootTime(): Long {
+    private fun readBootTime(): Long {
         return System.currentTimeMillis() - SystemClock.elapsedRealtime()
     }
 }

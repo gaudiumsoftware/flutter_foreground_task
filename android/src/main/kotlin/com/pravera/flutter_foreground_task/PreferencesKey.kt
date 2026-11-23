@@ -79,4 +79,6 @@ object PreferencesKey {
     const val CUSTOM_LAYOUT_PENDING_BOOT = "customLayoutPendingBoot"
     const val CUSTOM_LAYOUT_BLOCKED_INSTALL = "customLayoutBlockedInstall"
     const val CUSTOM_LAYOUT_BLOCKED_BOOT = "customLayoutBlockedBoot"
+    const val CUSTOM_LAYOUT_CONFIRMED_INSTALL = "customLayoutConfirmedInstall"
+    const val CUSTOM_LAYOUT_CONFIRMED_BOOT = "customLayoutConfirmedBoot"
 }
