@@ -113,7 +113,9 @@ class CustomLayoutGuard(context: Context) {
      * ainda não foram confirmados. Chamar antes de entregar a notificação ao sistema.
      */
     fun markPending() {
-        if (isConfirmScheduled) {
+        // Sem a hora da instalação não há como confirmar nem bloquear; o motivo já foi registrado
+        // no log ao lê-la.
+        if (isConfirmScheduled || installTime == 0L) {
             return
         }
 
@@ -218,7 +220,8 @@ class CustomLayoutGuard(context: Context) {
             }
             info.lastUpdateTime
         } catch (e: PackageManager.NameNotFoundException) {
-            Log.e(TAG, e.message, e)
+            Log.e(TAG, "Hora da instalação indisponível; a guarda do layout customizado " +
+                    "fica desligada neste processo.", e)
             0L
         }
     }
