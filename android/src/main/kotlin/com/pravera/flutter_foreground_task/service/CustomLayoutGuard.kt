@@ -5,10 +5,10 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.os.Process
 import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
+import java.util.UUID
 import kotlin.math.abs
 import com.pravera.flutter_foreground_task.PreferencesKey as PrefsKey
 
@@ -43,6 +43,13 @@ class CustomLayoutGuard(context: Context) {
          * relógios lidos em sequência, que oscila alguns ms.
          */
         private const val BOOT_TOLERANCE_MILLIS = 60_000L
+
+        /**
+         * Identifica o processo atual. Fica no companion para ser o mesmo em todas as instâncias
+         * do serviço dentro do processo; o PID não serve porque um processo novo pode recebê-lo
+         * de volta.
+         */
+        private val PROCESS_ID = UUID.randomUUID().toString()
     }
 
     private val appContext = context.applicationContext
@@ -64,8 +71,8 @@ class CustomLayoutGuard(context: Context) {
      * @return true quando a notificação deve usar o template padrão.
      */
     fun isBlocked(): Boolean {
-        val pendingPid = prefs.getInt(PrefsKey.CUSTOM_LAYOUT_PENDING_PID, 0)
-        if (pendingPid != 0 && pendingPid != Process.myPid()) {
+        val pendingProcess = prefs.getString(PrefsKey.CUSTOM_LAYOUT_PENDING_PROCESS, null)
+        if (pendingProcess != null && pendingProcess != PROCESS_ID) {
             val crashedOnPost = isCurrentSession(
                 PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL,
                 PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT
@@ -78,7 +85,7 @@ class CustomLayoutGuard(context: Context) {
                     putLong(PrefsKey.CUSTOM_LAYOUT_BLOCKED_INSTALL, installTime)
                     putLong(PrefsKey.CUSTOM_LAYOUT_BLOCKED_BOOT, bootId)
                 }
-                remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PID)
+                remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PROCESS)
                 remove(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL)
                 remove(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT)
                 commit()
@@ -110,7 +117,7 @@ class CustomLayoutGuard(context: Context) {
 
         // commit() e não apply(): a marca precisa estar no disco antes de o processo morrer.
         with(prefs.edit()) {
-            putInt(PrefsKey.CUSTOM_LAYOUT_PENDING_PID, Process.myPid())
+            putString(PrefsKey.CUSTOM_LAYOUT_PENDING_PROCESS, PROCESS_ID)
             putLong(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL, installTime)
             putLong(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT, bootId)
             commit()
@@ -124,7 +131,7 @@ class CustomLayoutGuard(context: Context) {
         isConfirmScheduled = false
 
         with(prefs.edit()) {
-            remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PID)
+            remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PROCESS)
             remove(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL)
             remove(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT)
             putLong(PrefsKey.CUSTOM_LAYOUT_CONFIRMED_INSTALL, installTime)
