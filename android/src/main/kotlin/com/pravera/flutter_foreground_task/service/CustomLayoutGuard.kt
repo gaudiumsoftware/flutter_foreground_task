@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.os.SystemClock
+import android.provider.Settings
 import android.util.Log
 import kotlin.math.abs
 import com.pravera.flutter_foreground_task.PreferencesKey as PrefsKey
@@ -37,7 +38,10 @@ class CustomLayoutGuard(context: Context) {
         /** O crash chega cerca de 1 s depois do post. */
         private const val CONFIRM_DELAY_MILLIS = 5_000L
 
-        /** A hora do boot vem de dois relógios lidos em sequência e oscila alguns ms. */
+        /**
+         * Sem BOOT_COUNT, o boot é identificado pela hora em que aconteceu, derivada de dois
+         * relógios lidos em sequência, que oscila alguns ms.
+         */
         private const val BOOT_TOLERANCE_MILLIS = 60_000L
     }
 
@@ -48,9 +52,11 @@ class CustomLayoutGuard(context: Context) {
     private val handler = Handler(Looper.getMainLooper())
     private var isConfirmScheduled = false
 
-    // Atualizar o app encerra o processo, então os dois valores são fixos durante a vida dele.
+    // Atualizar o app ou reiniciar o aparelho encerra o processo, então os valores são fixos
+    // durante a vida dele.
     private val installTime by lazy { readInstallTime() }
-    private val bootTime by lazy { readBootTime() }
+    private val bootCount by lazy { readBootCount() }
+    private val bootId by lazy { bootCount ?: readBootTime() }
 
     /**
      * Indica se o layout customizado está desligado na instalação e no boot atuais.
@@ -70,7 +76,7 @@ class CustomLayoutGuard(context: Context) {
                             "customizado; a notificação usará o template padrão até o próximo " +
                             "boot ou atualização.")
                     putLong(PrefsKey.CUSTOM_LAYOUT_BLOCKED_INSTALL, installTime)
-                    putLong(PrefsKey.CUSTOM_LAYOUT_BLOCKED_BOOT, bootTime)
+                    putLong(PrefsKey.CUSTOM_LAYOUT_BLOCKED_BOOT, bootId)
                 }
                 remove(PrefsKey.CUSTOM_LAYOUT_PENDING_PID)
                 remove(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL)
@@ -106,7 +112,7 @@ class CustomLayoutGuard(context: Context) {
         with(prefs.edit()) {
             putInt(PrefsKey.CUSTOM_LAYOUT_PENDING_PID, Process.myPid())
             putLong(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL, installTime)
-            putLong(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT, bootTime)
+            putLong(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT, bootId)
             commit()
         }
 
@@ -122,23 +128,26 @@ class CustomLayoutGuard(context: Context) {
             remove(PrefsKey.CUSTOM_LAYOUT_PENDING_INSTALL)
             remove(PrefsKey.CUSTOM_LAYOUT_PENDING_BOOT)
             putLong(PrefsKey.CUSTOM_LAYOUT_CONFIRMED_INSTALL, installTime)
-            putLong(PrefsKey.CUSTOM_LAYOUT_CONFIRMED_BOOT, bootTime)
+            putLong(PrefsKey.CUSTOM_LAYOUT_CONFIRMED_BOOT, bootId)
             apply()
         }
     }
 
     /**
      * @param installKey chave da hora da instalação gravada.
-     * @param bootKey chave da hora do boot gravada.
+     * @param bootKey chave da identificação do boot gravada.
      * @return true quando os valores gravados nas chaves são da instalação e do boot atuais.
      */
     private fun isCurrentSession(installKey: String, bootKey: String): Boolean {
         val install = prefs.getLong(installKey, 0L)
         val boot = prefs.getLong(bootKey, 0L)
+        val isSameBoot = if (bootCount != null) {
+            boot == bootId
+        } else {
+            abs(boot - bootId) < BOOT_TOLERANCE_MILLIS
+        }
 
-        return install != 0L &&
-                install == installTime &&
-                abs(boot - bootTime) < BOOT_TOLERANCE_MILLIS
+        return install != 0L && install == installTime && isSameBoot
     }
 
     /**
@@ -160,6 +169,21 @@ class CustomLayoutGuard(context: Context) {
             Log.e(TAG, e.message, e)
             0L
         }
+    }
+
+    /**
+     * Contador de boots do sistema. Não depende do relógio de parede, que pode saltar por
+     * sincronização de rede ou ajuste manual.
+     *
+     * @return número de boots do aparelho, ou null quando o sistema não o informa.
+     */
+    private fun readBootCount(): Long? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            return null
+        }
+
+        val count = Settings.Global.getInt(appContext.contentResolver, Settings.Global.BOOT_COUNT, -1)
+        return if (count >= 0) count.toLong() else null
     }
 
     /** @return hora do último boot do aparelho, em ms. */
