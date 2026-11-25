@@ -28,6 +28,7 @@ class ServiceStartOptions {
     this.notificationUseCustomLayout,
     this.notificationTrackImagePath,
     this.notificationTitleImagePath,
+    this.notificationTitleImageDescription,
     this.notificationTextIconName,
     this.notificationEmphasisText,
     this.callback,
@@ -69,6 +70,11 @@ class ServiceStartOptions {
   /// Vazio esconde a imagem. Só Android.
   final String? notificationTitleImagePath;
 
+  /// Texto lido pelo leitor de tela no lugar da imagem do título.
+  ///
+  /// Vazio deixa a imagem sem descrição. Só Android.
+  final String? notificationTitleImageDescription;
+
   /// Nome de um drawable do app exibido à esquerda do corpo.
   ///
   /// Vetor, para acompanhar o tema da notificação. Só Android.
@@ -95,6 +101,7 @@ class ServiceStartOptions {
       'notificationUseCustomLayout': notificationUseCustomLayout,
       'notificationTrackImagePath': notificationTrackImagePath,
       'notificationTitleImagePath': notificationTitleImagePath,
+      'notificationTitleImageDescription': notificationTitleImageDescription,
       'notificationTextIconName': notificationTextIconName,
       'notificationEmphasisText': notificationEmphasisText,
     };
@@ -128,6 +135,7 @@ class ServiceUpdateOptions {
     this.notificationUseCustomLayout,
     this.notificationTrackImagePath,
     this.notificationTitleImagePath,
+    this.notificationTitleImageDescription,
     this.notificationTextIconName,
     this.notificationEmphasisText,
     this.callback,
@@ -171,6 +179,11 @@ class ServiceUpdateOptions {
   /// Vazio esconde a imagem. Só Android.
   final String? notificationTitleImagePath;
 
+  /// Texto lido pelo leitor de tela no lugar da imagem do título.
+  ///
+  /// Vazio deixa a imagem sem descrição. Só Android.
+  final String? notificationTitleImageDescription;
+
   /// Nome de um drawable do app exibido à esquerda do corpo.
   ///
   /// Vetor, para acompanhar o tema da notificação. Só Android.
@@ -196,6 +209,7 @@ class ServiceUpdateOptions {
       'notificationUseCustomLayout': notificationUseCustomLayout,
       'notificationTrackImagePath': notificationTrackImagePath,
       'notificationTitleImagePath': notificationTitleImagePath,
+      'notificationTitleImageDescription': notificationTitleImageDescription,
       'notificationTextIconName': notificationTextIconName,
       'notificationEmphasisText': notificationEmphasisText,
       'notificationSound': notificationSound,

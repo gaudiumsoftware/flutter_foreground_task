@@ -52,9 +52,9 @@ class ForegroundService : Service() {
         private const val TITLE_IMAGE_MAX_WIDTH = 540
         private const val TITLE_IMAGE_MAX_HEIGHT = 128
 
-        /// Folga para a foto e a trilha no limite, com espaço para a troca de
-        /// versão de um arquivo.
-        private const val BITMAP_CACHE_BYTES = 2 * 1024 * 1024
+        /// Folga para a foto, a trilha e a imagem do título no limite, com
+        /// espaço para a troca de versão de um arquivo.
+        private const val BITMAP_CACHE_BYTES = 3 * 1024 * 1024
 
         private const val ACTION_NOTIFICATION_PRESSED = "onNotificationPressed"
         private const val ACTION_NOTIFICATION_DISMISSED = "onNotificationDismissed"
@@ -787,6 +787,10 @@ class ForegroundService : Service() {
             views.setViewVisibility(R.id.fft_notification_title_image, View.GONE)
         } else {
             views.setImageViewBitmap(R.id.fft_notification_title_image, titleImage)
+            views.setContentDescription(
+                R.id.fft_notification_title_image,
+                notificationContent.titleImageDescription?.takeIf { it.isNotBlank() }
+            )
             views.setViewVisibility(R.id.fft_notification_title_image, View.VISIBLE)
         }
 
