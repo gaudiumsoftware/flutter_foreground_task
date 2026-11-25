@@ -49,8 +49,8 @@ class ForegroundService : Service() {
         private const val PHOTO_MAX_SIZE = 256
         private const val TRACK_MAX_WIDTH = 1080
         private const val TRACK_MAX_HEIGHT = 128
-        private const val TITLE_IMAGE_MAX_WIDTH = 540
-        private const val TITLE_IMAGE_MAX_HEIGHT = 128
+        private const val TITLE_IMAGE_MAX_WIDTH = 360
+        private const val TITLE_IMAGE_MAX_HEIGHT = 80
 
         /// Folga para a foto, a trilha e a imagem do título no limite, com
         /// espaço para a troca de versão de um arquivo.
