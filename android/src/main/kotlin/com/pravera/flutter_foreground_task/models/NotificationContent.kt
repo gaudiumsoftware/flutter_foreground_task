@@ -234,8 +234,13 @@ data class NotificationContent(
                 titleImagePath?.let {
                     putString(PrefsKey.NOTIFICATION_TITLE_IMAGE_PATH, it)
                 }
-                titleImageDescription?.let {
-                    putString(PrefsKey.NOTIFICATION_TITLE_IMAGE_DESCRIPTION, it)
+                // A descrição pertence à imagem: trocar a imagem sem mandar
+                // descrição apaga a anterior, para o leitor de tela não
+                // anunciar o conteúdo da imagem antiga.
+                if (titleImageDescription != null) {
+                    putString(PrefsKey.NOTIFICATION_TITLE_IMAGE_DESCRIPTION, titleImageDescription)
+                } else if (titleImagePath != null) {
+                    remove(PrefsKey.NOTIFICATION_TITLE_IMAGE_DESCRIPTION)
                 }
                 textIconName?.let {
                     putString(PrefsKey.NOTIFICATION_TEXT_ICON_NAME, it)

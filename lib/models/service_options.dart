@@ -72,7 +72,8 @@ class ServiceStartOptions {
 
   /// Texto lido pelo leitor de tela no lugar da imagem do título.
   ///
-  /// Vazio deixa a imagem sem descrição. Só Android.
+  /// Vazio deixa a imagem sem descrição. Trocar a imagem sem mandar a
+  /// descrição apaga a anterior. Só Android.
   final String? notificationTitleImageDescription;
 
   /// Nome de um drawable do app exibido à esquerda do corpo.
@@ -181,7 +182,8 @@ class ServiceUpdateOptions {
 
   /// Texto lido pelo leitor de tela no lugar da imagem do título.
   ///
-  /// Vazio deixa a imagem sem descrição. Só Android.
+  /// Vazio deixa a imagem sem descrição. Trocar a imagem sem mandar a
+  /// descrição apaga a anterior. Só Android.
   final String? notificationTitleImageDescription;
 
   /// Nome de um drawable do app exibido à esquerda do corpo.
