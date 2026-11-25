@@ -17,6 +17,7 @@ data class NotificationContent(
         val subText: String?,
         val useCustomLayout: Boolean,
         val trackImagePath: String?,
+        val titleImagePath: String?,
         val textIconName: String?,
         val emphasisText: String?,
         val progress: NotificationProgress?
@@ -59,6 +60,8 @@ data class NotificationContent(
 
             val trackImagePath = prefs.getString(PrefsKey.NOTIFICATION_TRACK_IMAGE_PATH, null)
 
+            val titleImagePath = prefs.getString(PrefsKey.NOTIFICATION_TITLE_IMAGE_PATH, null)
+
             val textIconName = prefs.getString(PrefsKey.NOTIFICATION_TEXT_ICON_NAME, null)
 
             val emphasisText = prefs.getString(PrefsKey.NOTIFICATION_EMPHASIS_TEXT, null)
@@ -78,6 +81,7 @@ data class NotificationContent(
                 subText = subText,
                 useCustomLayout = useCustomLayout,
                 trackImagePath = trackImagePath,
+                titleImagePath = titleImagePath,
                 textIconName = textIconName,
                 emphasisText = emphasisText,
                 progress = progress
@@ -117,6 +121,8 @@ data class NotificationContent(
 
             val trackImagePath = map?.get(PrefsKey.NOTIFICATION_TRACK_IMAGE_PATH) as? String
 
+            val titleImagePath = map?.get(PrefsKey.NOTIFICATION_TITLE_IMAGE_PATH) as? String
+
             val textIconName = map?.get(PrefsKey.NOTIFICATION_TEXT_ICON_NAME) as? String
 
             val emphasisText = map?.get(PrefsKey.NOTIFICATION_EMPHASIS_TEXT) as? String
@@ -136,6 +142,7 @@ data class NotificationContent(
                 putString(PrefsKey.NOTIFICATION_SUB_TEXT, subText)
                 putBoolean(PrefsKey.NOTIFICATION_USE_CUSTOM_LAYOUT, useCustomLayout)
                 putString(PrefsKey.NOTIFICATION_TRACK_IMAGE_PATH, trackImagePath)
+                putString(PrefsKey.NOTIFICATION_TITLE_IMAGE_PATH, titleImagePath)
                 putString(PrefsKey.NOTIFICATION_TEXT_ICON_NAME, textIconName)
                 putString(PrefsKey.NOTIFICATION_EMPHASIS_TEXT, emphasisText)
                 putString(PrefsKey.NOTIFICATION_PROGRESS, progressJsonString)
@@ -176,6 +183,8 @@ data class NotificationContent(
 
             val trackImagePath = map?.get(PrefsKey.NOTIFICATION_TRACK_IMAGE_PATH) as? String
 
+            val titleImagePath = map?.get(PrefsKey.NOTIFICATION_TITLE_IMAGE_PATH) as? String
+
             val textIconName = map?.get(PrefsKey.NOTIFICATION_TEXT_ICON_NAME) as? String
 
             val emphasisText = map?.get(PrefsKey.NOTIFICATION_EMPHASIS_TEXT) as? String
@@ -209,6 +218,9 @@ data class NotificationContent(
                 }
                 trackImagePath?.let {
                     putString(PrefsKey.NOTIFICATION_TRACK_IMAGE_PATH, it)
+                }
+                titleImagePath?.let {
+                    putString(PrefsKey.NOTIFICATION_TITLE_IMAGE_PATH, it)
                 }
                 textIconName?.let {
                     putString(PrefsKey.NOTIFICATION_TEXT_ICON_NAME, it)
