@@ -125,6 +125,12 @@ class ForegroundService : Service() {
         }
     }
 
+    private val customLayoutGuard by lazy { CustomLayoutGuard(this) }
+
+    // Se a última notificação montada usa o layout customizado. Cada post entrega a notificação
+    // montada logo antes dele, com o mesmo conteúdo.
+    private var isCustomLayoutNotification = false
+
     // A broadcast receiver that handles intents that occur in the foreground service.
     private var broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -335,10 +341,12 @@ class ForegroundService : Service() {
 
         val serviceId = notificationOptions.serviceId
         val notification = createNotification()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(serviceId, notification, foregroundServiceTypes.value)
-        } else {
-            startForeground(serviceId, notification)
+        postGuarded {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(serviceId, notification, foregroundServiceTypes.value)
+            } else {
+                startForeground(serviceId, notification)
+            }
         }
 
         releaseLockMode()
@@ -359,10 +367,30 @@ class ForegroundService : Service() {
 
         val serviceId = notificationOptions.serviceId
         val notification = createNotification()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(serviceId, notification, foregroundServiceTypes.value)
-        } else {
-            startForeground(serviceId, notification)
+        postGuarded {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(serviceId, notification, foregroundServiceTypes.value)
+            } else {
+                startForeground(serviceId, notification)
+            }
+        }
+    }
+
+    /**
+     * Entrega a notificação ao sistema registrando o post na guarda quando ela usa o layout
+     * customizado. Se a entrega falhar, a marca gravada para ela é desfeita.
+     *
+     * @param post chamada que entrega ao sistema a notificação montada logo antes.
+     */
+    private inline fun postGuarded(post: () -> Unit) {
+        val marked = isCustomLayoutNotification && customLayoutGuard.markPending()
+        try {
+            post()
+        } catch (e: Exception) {
+            if (marked) {
+                customLayoutGuard.cancelPending()
+            }
+            throw e
         }
     }
 
@@ -439,6 +467,9 @@ class ForegroundService : Service() {
             needsRebuildButtons = true
         }
 
+        val useCustomLayout = notificationContent.useCustomLayout && !customLayoutGuard.isBlocked()
+        isCustomLayoutNotification = useCustomLayout
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val builder = Notification.Builder(this, notificationOptions.channelId)
             builder.setOngoing(true)
@@ -454,7 +485,7 @@ class ForegroundService : Service() {
             // Com o corpo customizado a foto é desenhada por ele. Definir o
             // ícone grande aqui também duplicaria a imagem e faria o sistema
             // reservar a largura dele, espremendo o título.
-            if (!notificationContent.useCustomLayout) {
+            if (!useCustomLayout) {
                 loadPhoto(notificationContent.largeIconPath)?.let {
                     builder.setLargeIcon(it)
                 }
@@ -462,7 +493,7 @@ class ForegroundService : Service() {
             notificationContent.progress?.let {
                 builder.setProgress(it.max, it.current, it.indeterminate)
             }
-            if (notificationContent.useCustomLayout) {
+            if (useCustomLayout) {
                 // Só a expandida é customizada. A recolhida tem altura fixa e
                 // menor do que o corpo customizado, o que cortava a segunda
                 // linha no meio; deixá-la com o template padrão resolve e é o
@@ -501,7 +532,7 @@ class ForegroundService : Service() {
             // Com o corpo customizado a foto é desenhada por ele. Definir o
             // ícone grande aqui também duplicaria a imagem e faria o sistema
             // reservar a largura dele, espremendo o título.
-            if (!notificationContent.useCustomLayout) {
+            if (!useCustomLayout) {
                 loadPhoto(notificationContent.largeIconPath)?.let {
                     builder.setLargeIcon(it)
                 }
@@ -509,7 +540,7 @@ class ForegroundService : Service() {
             notificationContent.progress?.let {
                 builder.setProgress(it.max, it.current, it.indeterminate)
             }
-            if (notificationContent.useCustomLayout) {
+            if (useCustomLayout) {
                 builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 builder.setCustomBigContentView(buildCustomView(notificationContent))
             }
@@ -545,7 +576,9 @@ class ForegroundService : Service() {
             // crash 23+
             ContextCompat.getSystemService(this, NotificationManager::class.java)
         }
-        nm?.notify(serviceId, notification)
+        postGuarded {
+            nm?.notify(serviceId, notification)
+        }
     }
 
     @SuppressLint("WakelockTimeout")
