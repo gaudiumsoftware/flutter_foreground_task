@@ -27,6 +27,8 @@ class ServiceStartOptions {
     this.notificationProgress,
     this.notificationUseCustomLayout,
     this.notificationTrackImagePath,
+    this.notificationTitleImagePath,
+    this.notificationTitleImageDescription,
     this.notificationTextIconName,
     this.notificationEmphasisText,
     this.callback,
@@ -63,6 +65,17 @@ class ServiceStartOptions {
   /// sobre uma barra de progresso. Só Android.
   final String? notificationTrackImagePath;
 
+  /// Caminho de uma imagem exibida à direita do título, no corpo customizado.
+  ///
+  /// Vazio esconde a imagem. Só Android.
+  final String? notificationTitleImagePath;
+
+  /// Texto lido pelo leitor de tela no lugar da imagem do título.
+  ///
+  /// Vazio deixa a imagem sem descrição. Trocar a imagem sem mandar a
+  /// descrição apaga a anterior. Só Android.
+  final String? notificationTitleImageDescription;
+
   /// Nome de um drawable do app exibido à esquerda do corpo.
   ///
   /// Vetor, para acompanhar o tema da notificação. Só Android.
@@ -88,6 +101,8 @@ class ServiceStartOptions {
       'notificationProgress': notificationProgress?.toJson(),
       'notificationUseCustomLayout': notificationUseCustomLayout,
       'notificationTrackImagePath': notificationTrackImagePath,
+      'notificationTitleImagePath': notificationTitleImagePath,
+      'notificationTitleImageDescription': notificationTitleImageDescription,
       'notificationTextIconName': notificationTextIconName,
       'notificationEmphasisText': notificationEmphasisText,
     };
@@ -120,6 +135,8 @@ class ServiceUpdateOptions {
     this.notificationProgress,
     this.notificationUseCustomLayout,
     this.notificationTrackImagePath,
+    this.notificationTitleImagePath,
+    this.notificationTitleImageDescription,
     this.notificationTextIconName,
     this.notificationEmphasisText,
     this.callback,
@@ -158,6 +175,17 @@ class ServiceUpdateOptions {
   /// sobre uma barra de progresso. Só Android.
   final String? notificationTrackImagePath;
 
+  /// Caminho de uma imagem exibida à direita do título, no corpo customizado.
+  ///
+  /// Vazio esconde a imagem. Só Android.
+  final String? notificationTitleImagePath;
+
+  /// Texto lido pelo leitor de tela no lugar da imagem do título.
+  ///
+  /// Vazio deixa a imagem sem descrição. Trocar a imagem sem mandar a
+  /// descrição apaga a anterior. Só Android.
+  final String? notificationTitleImageDescription;
+
   /// Nome de um drawable do app exibido à esquerda do corpo.
   ///
   /// Vetor, para acompanhar o tema da notificação. Só Android.
@@ -182,6 +210,8 @@ class ServiceUpdateOptions {
       'notificationProgress': notificationProgress?.toJson(),
       'notificationUseCustomLayout': notificationUseCustomLayout,
       'notificationTrackImagePath': notificationTrackImagePath,
+      'notificationTitleImagePath': notificationTitleImagePath,
+      'notificationTitleImageDescription': notificationTitleImageDescription,
       'notificationTextIconName': notificationTextIconName,
       'notificationEmphasisText': notificationEmphasisText,
       'notificationSound': notificationSound,

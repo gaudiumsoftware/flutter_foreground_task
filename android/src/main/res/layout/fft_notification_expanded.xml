@@ -66,14 +66,37 @@
       </LinearLayout>
     </LinearLayout>
 
-    <ImageView
-      android:id="@+id/fft_notification_photo"
-      android:layout_width="52dp"
-      android:layout_height="52dp"
-      android:layout_marginStart="12dp"
-      android:scaleType="fitCenter"
-      android:adjustViewBounds="true"
-      android:contentDescription="@null" />
+    <!-- A imagem do título fica no topo da coluna da direita, na altura do
+         título e acima da foto. Sem imagem, a foto fica centralizada no
+         bloco de texto. -->
+    <LinearLayout
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:orientation="vertical"
+      android:gravity="end">
+
+      <!-- Imagem mais larga que maxWidth encolhe em vez de apertar o título. -->
+      <ImageView
+        android:id="@+id/fft_notification_title_image"
+        android:layout_width="wrap_content"
+        android:layout_height="26dp"
+        android:maxWidth="120dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginBottom="6dp"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
+        android:visibility="gone"
+        android:contentDescription="@null" />
+
+      <ImageView
+        android:id="@+id/fft_notification_photo"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:layout_marginStart="12dp"
+        android:scaleType="fitCenter"
+        android:adjustViewBounds="true"
+        android:contentDescription="@null" />
+    </LinearLayout>
   </LinearLayout>
 
   <ImageView
